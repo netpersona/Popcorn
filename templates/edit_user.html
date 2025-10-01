@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e5a00d;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title img {
+            height: 32px;
+            width: 32px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #e0e0e0;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: #202020;
+            padding: 20px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .card-header h4 {
+            margin: 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        .user-info-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .user-info-header img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 3px solid #2a2a2a;
+        }
+
+        .user-info-header h5 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            color: #e0e0e0;
+        }
+
+        .user-info-header p {
+            color: #999;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #e0e0e0;
+        }
+
+        .form-check {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #3a3a3a;
+        }
+
+        .form-check:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-check-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+
+        .form-check-input {
+            width: 50px;
+            height: 26px;
+            cursor: pointer;
+            position: relative;
+            appearance: none;
+            background: #4b5563;
+            border-radius: 13px;
+            transition: background 0.3s;
+        }
+
+        .form-check-input:checked {
+            background: #e5a00d;
+        }
+
+        .form-check-input::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            background: white;
+            transition: transform 0.3s;
+        }
+
+        .form-check-input:checked::before {
+            transform: translateX(24px);
+        }
+
+        .form-text {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #999;
+            padding-left: 60px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .alert-info {
+            background: #1a3a4d;
+            border: 1px solid #2a4a6d;
+            color: #66d9ef;
+        }
+
+        .alert-warning {
+            background: #4d3a1a;
+            border: 1px solid #6d4a2a;
+            color: #f59e0b;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: #e5a00d;
+            color: #121212;
+        }
+
+        .btn-primary:hover {
+            background: #d89000;
+        }
+
+        .btn-primary:disabled {
+            background: #6b5d3a;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #4b5563;
+            color: #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #5b6573;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <img src="/static/images/logo.png" alt="Popcorn">
+            Popcorn - Edit User
+        </div>
+        <div class="nav-buttons">
+            <a href="/guide" class="nav-btn">
+                <i class="fas fa-th"></i> Guide
+            </a>
+            <a href="/channels" class="nav-btn">
+                <i class="fas fa-list"></i> Channels
+            </a>
+            <a href="/settings" class="nav-btn">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-user-edit"></i> Edit User: {{ user.username }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="user-info-header">
+                    <img src="{{ user.avatar_url if user.avatar_url else '/static/images/default-avatar.png' }}" 
+                         alt="{{ user.username }}" 
+                         onerror="this.src='/static/images/default-avatar.png'">
+                    <h5>{{ user.username }}</h5>
+                    {% if user.email %}
+                    <p><i class="fas fa-envelope"></i> {{ user.email }}</p>
+                    {% endif %}
+                </div>
+
+                <form method="POST" action="{{ url_for('user_mgmt.edit_user', user_id=user.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="form-group">
+                        <label>Permissions</label>
+                        <div class="form-check">
+                            <label class="form-check-label" for="is_admin">
+                                <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin" 
+                                       {% if user.is_admin %}checked{% endif %}>
+                                <span>
+                                    <i class="fas fa-crown" style="color: #e5a00d;"></i> <strong>Administrator</strong>
+                                </span>
+                            </label>
+                            <small class="form-text">
+                                Admins can manage users, settings, and all content
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Account Status</label>
+                        <div class="form-check">
+                            <label class="form-check-label" for="is_active">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                       {% if user.is_active %}checked{% endif %}>
+                                <span>
+                                    <i class="fas fa-check-circle" style="color: #4ade80;"></i> <strong>Active</strong>
+                                </span>
+                            </label>
+                            <small class="form-text">
+                                Inactive users cannot log in
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Created:</strong> {{ user.created_at.strftime('%B %d, %Y at %I:%M %p') if user.created_at else 'Unknown' }}
+                            <br>
+                            <strong>Last Login:</strong> {{ user.last_login.strftime('%B %d, %Y at %I:%M %p') if user.last_login else 'Never' }}
+                        </div>
+                    </div>
+
+                    {% if user.id == current_user.id %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>You cannot modify your own permissions.</div>
+                    </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary" {% if user.id == current_user.id %}disabled{% endif %}>
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to User List
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

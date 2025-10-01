@@ -1,11 +1,17 @@
 import os
-from flask import Flask, render_template, jsonify, request, redirect, url_for
+import sys
+from flask import Flask, render_template, jsonify, request, redirect, url_for, flash, session, abort
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
-from models import init_db, get_session, Settings
+from models import init_db, get_session, Settings, User
 from plex_api import PlexAPI
 from scheduler import ScheduleGenerator
+from auth import PlexOAuth, create_or_update_plex_user
+from user_management import user_mgmt_bp, validate_invite_code, mark_invite_used
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+from urllib.parse import urlparse, urljoin
 
 load_dotenv()
 
@@ -25,8 +31,48 @@ def get_current_minutes():
     now = datetime.now()
     return now.hour * 60 + now.minute
 
+def is_safe_url(target):
+    """Validate redirect URL is safe (relative to current host)"""
+    if not target:
+        return False
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
 app = Flask(__name__)
-app.secret_key = os.getenv('SESSION_SECRET', 'dev-secret-key-change-in-production')
+
+session_secret = os.getenv('SESSION_SECRET')
+if not session_secret or session_secret == 'dev-secret-key-change-in-production':
+    if os.getenv('FLASK_ENV') == 'production':
+        logger.error("CRITICAL: SESSION_SECRET not set in production! Application will not start.")
+        sys.exit(1)
+    else:
+        logger.warning("WARNING: Using default SESSION_SECRET. Set SESSION_SECRET environment variable for production!")
+        session_secret = 'dev-secret-key-change-in-production'
+
+app.secret_key = session_secret
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['REMEMBER_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
+app.config['REMEMBER_COOKIE_HTTPONLY'] = True
+app.config['REMEMBER_COOKIE_SAMESITE'] = 'Lax'
+app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=365)
+app.config['WTF_CSRF_TIME_LIMIT'] = None
+
+csrf = CSRFProtect(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
+login_manager.login_message_category = 'info'
+
+app.register_blueprint(user_mgmt_bp)
+
+@login_manager.user_loader
+def load_user(user_id):
+    db_session = get_session()
+    return db_session.query(User).filter_by(id=int(user_id)).first()
 
 db_session = None
 plex_api = None
@@ -89,11 +135,183 @@ def sync_movies():
     session.commit()
     logger.info(f"Added {new_count} new movie entries to database")
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('guide'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        db_session = get_session()
+        user = db_session.query(User).filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            user.last_login = datetime.utcnow()
+            db_session.commit()
+            login_user(user, remember=True)
+            
+            next_page = request.args.get('next')
+            if next_page and is_safe_url(next_page):
+                return redirect(next_page)
+            return redirect(url_for('guide'))
+        
+        flash('Invalid username or password', 'error')
+    
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('guide'))
+    
+    invite_code = request.args.get('invite', '')
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        setup_token = request.form.get('setup_token', '')
+        invite_code = request.form.get('invite_code', '')
+        
+        if password != confirm_password:
+            flash('Passwords do not match', 'error')
+            return render_template('login.html', show_register=True, invite_code=invite_code)
+        
+        db_session = get_session()
+        
+        is_first_user = db_session.query(User).count() == 0
+        invited_by_user_id = None
+        
+        if is_first_user:
+            required_token = os.getenv('ADMIN_SETUP_TOKEN')
+            if not required_token:
+                flash('Admin setup is not configured. Please contact the administrator.', 'error')
+                return render_template('login.html', show_register=True)
+            
+            if setup_token != required_token:
+                flash('Invalid setup token. The first user registration requires the admin setup token.', 'error')
+                return render_template('login.html', show_register=True)
+        else:
+            if not invite_code:
+                flash('An invitation code is required to register.', 'error')
+                return render_template('login.html', show_register=True)
+            
+            is_valid, result = validate_invite_code(invite_code)
+            if not is_valid:
+                flash(result, 'error')
+                return render_template('login.html', show_register=True, invite_code=invite_code)
+            
+            invitation = result
+            invited_by_user_id = invitation.created_by
+        
+        if db_session.query(User).filter_by(username=username).first():
+            flash('Username already exists', 'error')
+            return render_template('login.html', show_register=True, invite_code=invite_code)
+        
+        if email and db_session.query(User).filter_by(email=email).first():
+            flash('Email already registered', 'error')
+            return render_template('login.html', show_register=True, invite_code=invite_code)
+        
+        user = User(
+            username=username,
+            email=email,
+            is_admin=is_first_user,
+            invited_by=invited_by_user_id
+        )
+        user.set_password(password)
+        
+        db_session.add(user)
+        db_session.commit()
+        
+        if invite_code and not is_first_user:
+            mark_invite_used(invite_code, user.id)
+        
+        login_user(user, remember=True)
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('guide'))
+    
+    db_session = get_session()
+    is_first_user = db_session.query(User).count() == 0
+    return render_template('login.html', show_register=True, is_first_user=is_first_user, invite_code=invite_code)
+
+@app.route('/auth/plex')
+def plex_auth():
+    db_session = get_session()
+    is_first_user = db_session.query(User).count() == 0
+    
+    if is_first_user:
+        required_token = os.getenv('ADMIN_SETUP_TOKEN')
+        if not required_token:
+            flash('Admin setup is not configured. Please register a local account first.', 'error')
+            return redirect(url_for('login'))
+        
+        flash('The first admin account must be created using local registration with the setup token.', 'info')
+        return redirect(url_for('register'))
+    
+    plex_oauth = PlexOAuth()
+    redirect_uri = url_for('plex_callback', _external=True)
+    
+    auth_data = plex_oauth.get_auth_url(redirect_uri)
+    
+    if not auth_data:
+        flash('Failed to connect to Plex', 'error')
+        return redirect(url_for('login'))
+    
+    session['plex_pin_id'] = auth_data['pin_id']
+    return redirect(auth_data['auth_url'])
+
+@app.route('/auth/plex/callback')
+@csrf.exempt
+def plex_callback():
+    pin_id = session.get('plex_pin_id')
+    
+    if not pin_id:
+        flash('Invalid authentication request', 'error')
+        return redirect(url_for('login'))
+    
+    plex_oauth = PlexOAuth()
+    auth_token = plex_oauth.check_pin(pin_id)
+    
+    if not auth_token:
+        flash('Plex authentication failed or pending', 'error')
+        return redirect(url_for('login'))
+    
+    user_info = plex_oauth.get_user_info(auth_token)
+    
+    if not user_info:
+        flash('Failed to get Plex user information', 'error')
+        return redirect(url_for('login'))
+    
+    db_session = get_session()
+    user = create_or_update_plex_user(user_info, auth_token, db_session)
+    
+    if user:
+        login_user(user, remember=True)
+        session.pop('plex_pin_id', None)
+        flash(f'Welcome, {user.display_name}!', 'success')
+        return redirect(url_for('guide'))
+    
+    flash('Failed to create user account', 'error')
+    return redirect(url_for('login'))
+
+@app.route('/logout', methods=['POST'])
+@login_required
+def logout():
+    logout_user()
+    session.pop('_flashes', None)
+    flash('You have been logged out', 'info')
+    return redirect(url_for('login'))
+
 @app.route('/')
+@login_required
 def index():
     return redirect(url_for('guide'))
 
 @app.route('/guide')
+@login_required
 def guide():
     if not scheduler:
         return render_template('error.html', message="Application not initialized")
@@ -130,6 +348,7 @@ def guide():
                          current_minutes=current_minutes)
 
 @app.route('/channels')
+@login_required
 def channels_list():
     if not scheduler:
         return render_template('error.html', message="Application not initialized")
@@ -147,6 +366,7 @@ def channels_list():
     return render_template('index.html', channels=channel_info)
 
 @app.route('/channel/<channel_name>')
+@login_required
 def channel(channel_name):
     if not scheduler:
         return render_template('error.html', message="Application not initialized")
@@ -159,7 +379,8 @@ def channel(channel_name):
                          current=current,
                          schedule=schedule)
 
-@app.route('/play/<int:movie_id>')
+@app.route('/play/<int:movie_id>', methods=['POST'])
+@login_required
 def play(movie_id):
     if not plex_api:
         return jsonify({'success': False, 'message': 'Plex API not available'})
@@ -175,7 +396,12 @@ def play(movie_id):
     return jsonify({'success': success, 'message': message})
 
 @app.route('/settings', methods=['GET', 'POST'])
+@login_required
 def settings():
+    if not current_user.is_admin:
+        flash('Only administrators can access settings', 'error')
+        return redirect(url_for('guide'))
+    
     session = get_session()
     settings_obj = session.query(Settings).first()
     
@@ -200,6 +426,7 @@ def settings():
     return render_template('settings.html', settings=settings_obj, reshuffled=reshuffled)
 
 @app.route('/api/clients')
+@login_required
 def get_clients():
     if not plex_api:
         return jsonify({'success': False, 'clients': []})
@@ -208,6 +435,7 @@ def get_clients():
     return jsonify({'success': True, 'clients': clients})
 
 @app.route('/api/deeplink/<int:movie_id>')
+@login_required
 def api_deeplink(movie_id):
     if not plex_api:
         return jsonify({'success': False, 'message': 'Plex API not available'})
@@ -231,6 +459,7 @@ def api_deeplink(movie_id):
     })
 
 @app.route('/deeplink/<int:movie_id>')
+@login_required
 def deeplink(movie_id):
     if not plex_api:
         return render_template('error.html', message="Plex API not available")
@@ -251,11 +480,17 @@ def deeplink(movie_id):
                          plex_uri=deep_link['plex_uri'],
                          web_url=deep_link['web_url'])
 
-@app.route('/sync')
+@app.route('/sync', methods=['POST'])
+@login_required
 def sync():
+    if not current_user.is_admin:
+        flash('Only administrators can sync the library', 'error')
+        return redirect(url_for('guide'))
+    
     sync_movies()
     scheduler.generate_all_schedules(force=True)
-    return redirect(url_for('index'))
+    flash('Library synced and schedules regenerated', 'success')
+    return redirect(url_for('guide'))
 
 if __name__ == '__main__':
     initialize_app()

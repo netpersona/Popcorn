@@ -281,9 +281,12 @@
         <div class="empty-state">
             <h3>No Channels Available</h3>
             <p>Please sync your Plex library to generate channels.</p>
-            <a href="/sync" class="sync-btn">
-                <i class="fas fa-sync"></i> Sync Now
-            </a>
+            <form method="POST" action="/sync">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="sync-btn">
+                    <i class="fas fa-sync"></i> Sync Now
+                </button>
+            </form>
         </div>
         {% endif %}
     </div>

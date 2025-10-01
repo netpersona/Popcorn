@@ -302,10 +302,25 @@
             <div class="main-settings">
                 <div class="settings-card">
                     <div class="card-header">
+                        <h4><i class="fas fa-users"></i> User Management</h4>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: #999; margin-bottom: 20px;">
+                            Manage user access, create invitations, and configure permissions for your Popcorn instance.
+                        </p>
+                        <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-primary" style="width: 100%; display: inline-block; text-align: center; padding: 12px;">
+                            <i class="fas fa-users-cog"></i> Manage Users
+                        </a>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
                         <h4><i class="fas fa-sync-alt"></i> Schedule Configuration</h4>
                     </div>
                     <div class="card-body">
                         <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <div class="form-group">
                                 <label for="shuffle_frequency" class="form-label">Reshuffle Frequency</label>
                                 <select name="shuffle_frequency" id="shuffle_frequency" class="form-select">

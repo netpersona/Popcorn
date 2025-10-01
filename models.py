@@ -1,7 +1,8 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Date, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Date, UniqueConstraint, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 Base = declarative_base()
 
@@ -62,6 +63,63 @@ class Settings(Base):
     
     def __repr__(self):
         return f"<Settings(frequency='{self.shuffle_frequency}')>"
+
+class Invitation(Base):
+    __tablename__ = 'invitations'
+    
+    id = Column(Integer, primary_key=True)
+    code = Column(String, unique=True, nullable=False)
+    email = Column(String)
+    created_by = Column(Integer, ForeignKey('users.id'), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime)
+    used_by = Column(Integer, ForeignKey('users.id'))
+    used_at = Column(DateTime)
+    is_active = Column(Boolean, default=True)
+    
+    def __repr__(self):
+        return f"<Invitation(code='{self.code}', email='{self.email}')>"
+
+class User(Base):
+    __tablename__ = 'users'
+    
+    id = Column(Integer, primary_key=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True)
+    password_hash = Column(String)
+    plex_id = Column(String, unique=True)
+    plex_token = Column(String)
+    plex_username = Column(String)
+    display_name = Column(String)
+    avatar_url = Column(String)
+    is_admin = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_login = Column(DateTime)
+    invited_by = Column(Integer, ForeignKey('users.id'))
+    
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+    
+    def check_password(self, password):
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
+    
+    @property
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
+    
+    def get_id(self):
+        return str(self.id)
+    
+    def __repr__(self):
+        return f"<User(username='{self.username}', email='{self.email}')>"
 
 def init_db(db_path='popcorn.db'):
     engine = create_engine(f'sqlite:///{db_path}')

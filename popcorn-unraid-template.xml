@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>Popcorn</Name>
-  <Repository>netpersona/popcorn:latest</Repository>
-  <Registry>https://hub.docker.com/r/netpersona/popcorn/</Registry>
+  <Repository>your-dockerhub-username/popcorn:latest</Repository>
+  <Registry>https://hub.docker.com/r/your-dockerhub-username/popcorn/</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/netpersona/popcorn/issues</Support>
-  <Project>https://github.com/netpersona/popcorn</Project>
+  <Support>https://github.com/your-username/popcorn/issues</Support>
+  <Project>https://github.com/your-username/popcorn</Project>
   <Overview>Popcorn creates cable TV-style movie channels from your Plex media library. It automatically generates genre-based channels and seasonal holiday channels with 24-hour schedules, presented in a nostalgic TV guide interface.</Overview>
   <Category>MediaApp:Video MediaServer:Video</Category>
   <WebUI>http://[IP]:[PORT:5000]</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/netpersona/popcorn/main/popcorn-unraid-template.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/netpersona/popcorn/main/static/images/logo.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/your-username/popcorn/main/popcorn-unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/your-username/popcorn/main/static/images/logo.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>

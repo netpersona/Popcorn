@@ -45,13 +45,6 @@
             overflow: hidden;
         }
 
-        .channel-rail {
-            width: 180px;
-            background: #1a1a1a;
-            border-right: 1px solid #2a2a2a;
-            overflow-y: auto;
-            flex-shrink: 0;
-        }
 
         .channel-item {
             padding: 20px 15px;
@@ -204,6 +197,75 @@
             color: #121212;
             border-color: #e5a00d;
         }
+
+        .user-profile {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            border-top: 1px solid #2a2a2a;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10;
+            margin-top: auto;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #3a3a3a;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .logout-btn {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .logout-btn:hover {
+            background: #2a2a2a;
+            color: #e5a00d;
+        }
+
+        .channel-rail {
+            width: 180px;
+            background: #1a1a1a;
+            border-right: 1px solid #2a2a2a;
+            overflow-y: auto;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .channel-list {
+            flex: 1;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -222,9 +284,11 @@
             <button class="nav-btn" onclick="window.location.href='/channels'">
                 <i class="fas fa-list"></i> Channels
             </button>
+            {% if current_user.is_admin %}
             <button class="nav-btn" onclick="window.location.href='/settings'">
                 <i class="fas fa-cog"></i> Settings
             </button>
+            {% endif %}
             <button class="nav-btn" onclick="jumpToNow()">
                 <i class="fas fa-clock"></i> Jump to Now
             </button>
@@ -233,9 +297,29 @@
 
     <div class="guide-container">
         <div class="channel-rail" id="channel-rail">
-            {% for channel in channels %}
-            <div class="channel-item">{{ channel.name }}</div>
-            {% endfor %}
+            <div class="channel-list">
+                {% for channel in channels %}
+                <div class="channel-item">{{ channel.name }}</div>
+                {% endfor %}
+            </div>
+            
+            <div class="user-profile">
+                <img src="{{ current_user.avatar_url if current_user.avatar_url else '/static/images/default-avatar.png' }}" 
+                     alt="Avatar for {{ current_user.username }}" 
+                     class="user-avatar"
+                     loading="lazy"
+                     decoding="async"
+                     onerror="this.src='/static/images/default-avatar.png'">
+                <div class="user-info">
+                    <div class="user-name">{{ current_user.username }}</div>
+                </div>
+                <form method="POST" action="/logout" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="logout-btn" title="Logout" aria-label="Logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </form>
+            </div>
         </div>
 
         <div class="guide-content" id="guide-content">
