@@ -1,4 +1,4 @@
-#<img width="512" height="512" alt="popcorn" src="https://github.com/user-attachments/assets/e2a9d69c-078a-4079-8268-8bdf718a36f6" />
+#<img width="50" height="50" alt="popcorn" src="https://github.com/user-attachments/assets/e2a9d69c-078a-4079-8268-8bdf718a36f6" />
  Popcorn - Cable-Style Movie Scheduler
 
 ## Overview
