@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popcorn - TV Guide</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e5a00d;
+        }
+
+        .header-time {
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .guide-container {
+            display: flex;
+            height: calc(100vh - 60px);
+            overflow: hidden;
+        }
+
+        .channel-rail {
+            width: 180px;
+            background: #1a1a1a;
+            border-right: 1px solid #2a2a2a;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .channel-item {
+            padding: 20px 15px;
+            border-bottom: 1px solid #2a2a2a;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .guide-content {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+
+        .time-header {
+            position: sticky;
+            top: 0;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2a2a2a;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: repeat(48, 120px);
+            height: 40px;
+        }
+
+        .time-slot {
+            border-right: 1px solid #2a2a2a;
+            padding: 10px;
+            font-size: 0.85rem;
+            color: #999;
+            text-align: center;
+        }
+
+        .programs-grid {
+            position: relative;
+        }
+
+        .channel-row {
+            display: grid;
+            grid-template-columns: repeat(48, 120px);
+            border-bottom: 1px solid #2a2a2a;
+            height: 120px;
+            position: relative;
+        }
+
+        .program-tile {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 4px;
+            padding: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: absolute;
+            height: 110px;
+            top: 5px;
+        }
+
+        .program-tile:hover {
+            background: #3a3a3a;
+            transform: scale(1.02);
+            z-index: 5;
+        }
+
+        .program-title {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .program-time {
+            font-size: 0.75rem;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .program-info {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .current-time-indicator {
+            position: absolute;
+            top: 40px;
+            width: 2px;
+            background: #e5a00d;
+            z-index: 15;
+            pointer-events: none;
+            bottom: 0;
+        }
+
+        .current-time-marker {
+            position: absolute;
+            top: -8px;
+            left: -6px;
+            width: 14px;
+            height: 14px;
+            background: #e5a00d;
+            border-radius: 50%;
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #3a3a3a;
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a4a4a;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #e0e0e0;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: #3a3a3a;
+        }
+
+        .nav-btn.active {
+            background: #e5a00d;
+            color: #121212;
+            border-color: #e5a00d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <div class="header-title">
+                <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
+                Popcorn TV Guide
+            </div>
+            <div class="header-time" id="current-time">TODAY</div>
+        </div>
+        <div class="nav-buttons">
+            <button class="nav-btn active" onclick="window.location.href='/guide'">
+                <i class="fas fa-th"></i> Guide
+            </button>
+            <button class="nav-btn" onclick="window.location.href='/channels'">
+                <i class="fas fa-list"></i> Channels
+            </button>
+            <button class="nav-btn" onclick="window.location.href='/settings'">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+            <button class="nav-btn" onclick="jumpToNow()">
+                <i class="fas fa-clock"></i> Jump to Now
+            </button>
+        </div>
+    </div>
+
+    <div class="guide-container">
+        <div class="channel-rail" id="channel-rail">
+            {% for channel in channels %}
+            <div class="channel-item">{{ channel.name }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="guide-content" id="guide-content">
+            <div class="time-header">
+                {% for hour in range(24) %}
+                {% for half in range(2) %}
+                <div class="time-slot">{{ '%02d'|format(hour) }}:{{ '%02d'|format(half * 30) }}</div>
+                {% endfor %}
+                {% endfor %}
+            </div>
+
+            <div class="programs-grid">
+                <div class="current-time-indicator" id="time-indicator" style="left: {{ (current_minutes / 30) * 120 }}px;">
+                    <div class="current-time-marker"></div>
+                </div>
+
+                {% for channel in channels %}
+                <div class="channel-row">
+                    {% for program in channel.programs %}
+                    <div class="program-tile" 
+                         style="left: {{ (program.start_minute / 30) * 120 }}px; width: {{ (program.duration_minutes / 30) * 120 }}px;"
+                         onclick="playProgram({{ program.movie.id }})">
+                        <div class="program-title">{{ program.movie.title }}</div>
+                        <div class="program-time">{{ program.start_time }} - {{ program.end_time }}</div>
+                        <div class="program-info">
+                            {% if program.movie.year %}{{ program.movie.year }} • {% endif %}
+                            {{ program.duration_minutes }} min
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const currentMinutes = hours * 60 + minutes;
+            
+            const timeStr = now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true 
+            });
+            document.getElementById('current-time').textContent = 'TODAY ' + timeStr;
+            
+            const indicator = document.getElementById('time-indicator');
+            if (indicator) {
+                indicator.style.left = (currentMinutes / 30) * 120 + 'px';
+            }
+        }
+
+        function jumpToNow() {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const scrollPosition = (currentMinutes / 30) * 120 - window.innerWidth / 2 + 200;
+            
+            document.getElementById('guide-content').scrollTo({
+                left: Math.max(0, scrollPosition),
+                behavior: 'smooth'
+            });
+        }
+
+        function playProgram(movieId) {
+            window.open(`/deeplink/${movieId}`, '_blank', 'noopener,noreferrer');
+        }
+
+        const guideContent = document.getElementById('guide-content');
+        const channelRail = document.getElementById('channel-rail');
+        
+        guideContent.addEventListener('scroll', function() {
+            channelRail.scrollTop = guideContent.scrollTop;
+        });
+
+        updateTime();
+        setInterval(updateTime, 60000);
+
+        window.addEventListener('load', function() {
+            setTimeout(jumpToNow, 100);
+        });
+    </script>
+</body>
+</html>

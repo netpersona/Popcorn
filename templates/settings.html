@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e5a00d;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #e0e0e0;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        .nav-btn.active {
+            background: #e5a00d;
+            color: #121212;
+            border-color: #e5a00d;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .alert {
+            background: #1a4d1a;
+            border: 1px solid #2a6d2a;
+            color: #4ade80;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .settings-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: #202020;
+            padding: 20px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .card-header h4 {
+            font-size: 1.2rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #e0e0e0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #e5a00d;
+        }
+
+        .form-text {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: #999;
+        }
+
+        .form-static {
+            padding: 10px 0;
+            color: #ccc;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #e5a00d;
+            color: #121212;
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: #cc8f0a;
+        }
+
+        .btn-warning {
+            background: #2a2a2a;
+            color: #e0e0e0;
+            border: 1px solid #3a3a3a;
+            margin-left: 10px;
+        }
+
+        .btn-warning:hover {
+            background: #3a3a3a;
+        }
+
+        .holiday-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .holiday-item {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #e5a00d;
+        }
+
+        .holiday-item h6 {
+            margin-bottom: 5px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .holiday-item small {
+            color: #999;
+            font-size: 0.85rem;
+        }
+
+        .holiday-item p {
+            margin: 10px 0 0 0;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list .icon-check {
+            color: #4ade80;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #3a3a3a;
+            color: #e0e0e0;
+            padding: 8px 15px;
+            font-size: 0.85rem;
+        }
+
+        .btn-outline:hover {
+            background: #2a2a2a;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #2a2a2a;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 968px) {
+            .settings-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
+            Popcorn TV Guide
+        </div>
+        <div class="nav-buttons">
+            <a href="/guide" class="nav-btn">
+                <i class="fas fa-th"></i> Guide
+            </a>
+            <a href="/channels" class="nav-btn">
+                <i class="fas fa-list"></i> Channels
+            </a>
+            <a href="/settings" class="nav-btn active">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-cog"></i> Settings</h1>
+        </div>
+
+        {% if reshuffled %}
+        <div class="alert">
+            <i class="fas fa-check-circle"></i>
+            <span>Schedules have been reshuffled successfully!</span>
+        </div>
+        {% endif %}
+
+        <div class="settings-layout">
+            <div class="main-settings">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-sync-alt"></i> Schedule Configuration</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="form-group">
+                                <label for="shuffle_frequency" class="form-label">Reshuffle Frequency</label>
+                                <select name="shuffle_frequency" id="shuffle_frequency" class="form-select">
+                                    <option value="daily" {% if settings.shuffle_frequency == 'daily' %}selected{% endif %}>
+                                        Daily - Reshuffles every day
+                                    </option>
+                                    <option value="weekly" {% if settings.shuffle_frequency == 'weekly' %}selected{% endif %}>
+                                        Weekly - Reshuffles every 7 days
+                                    </option>
+                                    <option value="monthly" {% if settings.shuffle_frequency == 'monthly' %}selected{% endif %}>
+                                        Monthly - Reshuffles every 30 days
+                                    </option>
+                                </select>
+                                <span class="form-text">
+                                    Choose how often the schedule should automatically reshuffle
+                                </span>
+                            </div>
+
+                            {% if settings.last_shuffle_date %}
+                            <div class="form-group">
+                                <label class="form-label">Last Reshuffled</label>
+                                <div class="form-static">{{ settings.last_shuffle_date }}</div>
+                            </div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            
+                            <button type="submit" name="reshuffle_now" value="1" class="btn btn-warning">
+                                <i class="fas fa-sync"></i> Reshuffle Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-calendar-star"></i> Holiday Channels</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="holiday-list">
+                            <div class="holiday-item">
+                                <h6><i class="fas fa-ghost"></i> Cozy Halloween</h6>
+                                <small>Active: September - November</small>
+                                <p>Family-friendly Halloween movies (G, PG, PG-13)</p>
+                            </div>
+                            <div class="holiday-item">
+                                <h6><i class="fas fa-skull"></i> Scary Halloween</h6>
+                                <small>Active: September - November</small>
+                                <p>Adult horror movies (R, NR)</p>
+                            </div>
+                            <div class="holiday-item">
+                                <h6><i class="fas fa-tree"></i> Christmas</h6>
+                                <small>Active: November - January</small>
+                                <p>Christmas and holiday movies (All ratings)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-settings">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-info-circle"></i> About</h4>
+                    </div>
+                    <div class="card-body">
+                        <h6>Popcorn</h6>
+                        <p style="color: #999; font-size: 0.9rem;">Cable-style movie scheduler for Plex</p>
+                        
+                        <hr>
+                        
+                        <h6>Features</h6>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check icon-check"></i> Genre-based channels</li>
+                            <li><i class="fas fa-check icon-check"></i> Seasonal holiday channels</li>
+                            <li><i class="fas fa-check icon-check"></i> 24-hour TV schedules</li>
+                            <li><i class="fas fa-check icon-check"></i> Direct Plex playback</li>
+                        </ul>
+
+                        <hr>
+
+                        <a href="/api/clients" target="_blank" class="btn btn-outline">
+                            <i class="fas fa-desktop"></i> View Available Clients
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

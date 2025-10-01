@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ channel_name }} - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e5a00d;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #e0e0e0;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        .nav-btn.active {
+            background: #e5a00d;
+            color: #121212;
+            border-color: #e5a00d;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .back-button {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            color: #e0e0e0;
+            padding: 10px 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            transition: background 0.2s;
+        }
+
+        .back-button:hover {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+
+        .now-playing-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .now-playing-badge {
+            background: linear-gradient(135deg, #e5a00d 0%, #cc8f0a 100%);
+            color: #121212;
+            padding: 8px 16px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 15px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        .now-playing-card h2 {
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        .movie-meta {
+            color: #999;
+            margin-bottom: 15px;
+        }
+
+        .movie-summary {
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .play-button {
+            background: #e5a00d;
+            border: none;
+            color: #121212;
+            padding: 12px 30px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .play-button:hover {
+            background: #cc8f0a;
+            transform: scale(1.05);
+        }
+
+        .schedule-card {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .schedule-header {
+            background: #202020;
+            padding: 20px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .schedule-header h4 {
+            font-size: 1.2rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .schedule-body {
+            padding: 20px;
+        }
+
+        .schedule-item {
+            background: #2a2a2a;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .schedule-time {
+            font-weight: 600;
+            color: #e5a00d;
+            min-width: 80px;
+        }
+
+        .schedule-info {
+            flex: 1;
+        }
+
+        .schedule-info h6 {
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .schedule-info small {
+            color: #999;
+            font-size: 0.85rem;
+        }
+
+        .schedule-play {
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            color: #e0e0e0;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .schedule-play:hover {
+            background: #4a4a4a;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
+            Popcorn TV Guide
+        </div>
+        <div class="nav-buttons">
+            <a href="/guide" class="nav-btn">
+                <i class="fas fa-th"></i> Guide
+            </a>
+            <a href="/channels" class="nav-btn active">
+                <i class="fas fa-list"></i> Channels
+            </a>
+            <a href="/settings" class="nav-btn">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <a href="/channels" class="back-button">
+            <i class="fas fa-arrow-left"></i> Back to Channels
+        </a>
+
+        <div class="page-header">
+            <h1><i class="fas fa-film"></i> {{ channel_name }}</h1>
+        </div>
+
+        {% if current %}
+        <div class="now-playing-card">
+            <div class="now-playing-badge">
+                <i class="fas fa-play-circle"></i> NOW PLAYING
+            </div>
+            <h2>{{ current.movie.title }}</h2>
+            {% if current.movie.year %}
+            <div class="movie-meta">{{ current.movie.year }} • {{ current.movie.rating or 'Not Rated' }}</div>
+            {% endif %}
+            <div class="movie-meta"><strong>Time:</strong> {{ current.start_time }} - {{ current.end_time }}</div>
+            {% if current.movie.summary %}
+            <div class="movie-summary">{{ current.movie.summary }}</div>
+            {% endif %}
+            <button class="play-button" onclick="playMovie({{ current.movie.id }})">
+                <i class="fas fa-play"></i> Play on Plex
+            </button>
+        </div>
+        {% endif %}
+
+        <div class="schedule-card">
+            <div class="schedule-header">
+                <h4><i class="fas fa-calendar-alt"></i> Today's Schedule</h4>
+            </div>
+            <div class="schedule-body">
+                {% for item in schedule %}
+                <div class="schedule-item">
+                    <div class="schedule-time">{{ item.start_time }}</div>
+                    <div class="schedule-info">
+                        <h6>{{ item.movie.title }}</h6>
+                        <small>
+                            {% if item.movie.year %}{{ item.movie.year }} • {% endif %}
+                            {{ item.movie.duration }} min
+                        </small>
+                    </div>
+                    <button class="schedule-play" onclick="playMovie({{ item.movie.id }})">
+                        <i class="fas fa-play"></i> Play
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function playMovie(movieId) {
+            window.open(`/deeplink/${movieId}`, '_blank', 'noopener,noreferrer');
+        }
+    </script>
+</body>
+</html>
