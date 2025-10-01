@@ -46,7 +46,8 @@ class HolidayChannel(Base):
     name = Column(String, unique=True, nullable=False)
     start_month = Column(Integer, nullable=False)
     end_month = Column(Integer, nullable=False)
-    keywords = Column(String, nullable=False)
+    genre_filter = Column(String)
+    keywords = Column(String)
     rating_filter = Column(String)
     
     def __repr__(self):

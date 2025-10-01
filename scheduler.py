@@ -11,7 +11,19 @@ class ScheduleGenerator:
         self.session = get_session(db_path)
         self.initialize_holiday_channels()
     
+    def migrate_holiday_channels_schema(self):
+        from sqlalchemy import inspect, text
+        inspector = inspect(self.session.bind)
+        columns = [col['name'] for col in inspector.get_columns('holiday_channels')]
+        
+        if 'genre_filter' not in columns:
+            logger.info("Migrating holiday_channels table: adding genre_filter column")
+            self.session.execute(text('ALTER TABLE holiday_channels ADD COLUMN genre_filter TEXT'))
+            self.session.commit()
+    
     def initialize_holiday_channels(self):
+        self.migrate_holiday_channels_schema()
+        
         existing = self.session.query(HolidayChannel).count()
         if existing > 0:
             return
@@ -21,21 +33,24 @@ class ScheduleGenerator:
                 'name': 'Cozy Halloween',
                 'start_month': 9,
                 'end_month': 11,
-                'keywords': 'halloween,hocus,casper,ghostbusters,monster,addams,beetlejuice,nightmare before christmas,corpse bride,frankenweenie',
+                'genre_filter': 'animation,family,fantasy',
+                'keywords': 'halloween,hocus,casper,ghostbusters,monster,addams,beetlejuice,nightmare before christmas,corpse bride,frankenweenie,coraline,paranorman,witch,ghost,spooky,goosebumps',
                 'rating_filter': 'G,PG,PG-13'
             },
             {
                 'name': 'Scary Halloween',
                 'start_month': 9,
                 'end_month': 11,
-                'keywords': 'halloween,horror,scream,nightmare,friday the 13th,evil dead,saw,conjuring,insidious,paranormal,exorcist,ring,grudge',
-                'rating_filter': 'R,NR,Not Rated'
+                'genre_filter': 'horror,thriller',
+                'keywords': 'halloween,scream,nightmare,friday the 13th,evil dead,saw,conjuring,insidious,paranormal,exorcist,ring,grudge,terror,slasher',
+                'rating_filter': 'PG-13,R,NR,Not Rated,Unrated'
             },
             {
                 'name': 'Christmas',
                 'start_month': 11,
                 'end_month': 1,
-                'keywords': 'christmas,xmas,santa,holiday,elf,grinch,miracle,wonderful life,home alone,polar express,jingle,carol',
+                'genre_filter': 'holiday',
+                'keywords': 'christmas,xmas,santa,elf,grinch,miracle,wonderful life,home alone,polar express,jingle,carol,noel,claus,reindeer,snowman,nutcracker,scrooge',
                 'rating_filter': None
             }
         ]
@@ -45,7 +60,7 @@ class ScheduleGenerator:
             self.session.add(channel)
         
         self.session.commit()
-        logger.info("Initialized holiday channels")
+        logger.info("Initialized holiday channels with genre-based filtering")
     
     def get_active_holiday_channels(self):
         current_month = datetime.now().month
@@ -63,25 +78,56 @@ class ScheduleGenerator:
         return active
     
     def get_movies_for_holiday_channel(self, channel):
-        keywords = [k.strip().lower() for k in channel.keywords.split(',')]
         movies = self.session.query(Movie).all()
-        
         matching_movies = []
+        
+        genre_filters = []
+        if channel.genre_filter:
+            genre_filters = [g.strip().lower() for g in channel.genre_filter.split(',')]
+        
+        keywords = []
+        if channel.keywords:
+            keywords = [k.strip().lower() for k in channel.keywords.split(',')]
+        
         for movie in movies:
+            matched = False
+            genre_match = False
+            keyword_match = False
+            
+            movie_genre_lower = movie.genre.lower()
             title_lower = movie.title.lower()
             summary_lower = movie.summary.lower() if movie.summary else ''
             
-            title_match = any(keyword in title_lower for keyword in keywords)
-            summary_match = any(keyword in summary_lower for keyword in keywords)
+            if genre_filters:
+                if any(genre_filter in movie_genre_lower for genre_filter in genre_filters):
+                    genre_match = True
             
-            if title_match or summary_match:
+            if keywords:
+                title_match = any(keyword in title_lower for keyword in keywords)
+                summary_match = any(keyword in summary_lower for keyword in keywords)
+                
+                if title_match or summary_match:
+                    keyword_match = True
+            
+            if channel.name == 'Cozy Halloween':
+                matched = genre_match and keyword_match
+            elif channel.name == 'Scary Halloween':
+                horror_match = 'horror' in movie_genre_lower
+                thriller_with_keyword = 'thriller' in movie_genre_lower and keyword_match
+                matched = horror_match or thriller_with_keyword
+            else:
+                matched = genre_match or keyword_match
+            
+            if matched:
                 if channel.rating_filter:
-                    allowed_ratings = [r.strip() for r in channel.rating_filter.split(',')]
-                    if movie.rating in allowed_ratings or not movie.rating:
+                    allowed_ratings = [r.strip().upper() for r in channel.rating_filter.split(',')]
+                    movie_rating_upper = movie.rating.upper() if movie.rating else ''
+                    if movie_rating_upper in allowed_ratings or not movie.rating:
                         matching_movies.append(movie)
                 else:
                     matching_movies.append(movie)
         
+        logger.info(f"Found {len(matching_movies)} movies for holiday channel '{channel.name}'")
         return matching_movies
     
     def generate_channel_schedule(self, channel_name, movies, day=0):
