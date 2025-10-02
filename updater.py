@@ -59,44 +59,49 @@ class UpdateManager:
             logger.warning(f"Could not get git commit: {e}")
             return 'unknown'
     
-    def get_latest_remote_commit(self):
-        """Check GitHub for the latest commit on main branch"""
+    def get_latest_release(self):
+        """Check GitHub for the latest release"""
         try:
-            url = f"https://api.github.com/repos/{self.github_repo}/commits/main"
+            url = f"https://api.github.com/repos/{self.github_repo}/releases/latest"
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             data = response.json()
             return {
-                'sha': data['sha'][:7],
-                'full_sha': data['sha'],
-                'message': data['commit']['message'],
-                'author': data['commit']['author']['name'],
-                'date': data['commit']['author']['date']
+                'tag_name': data['tag_name'],
+                'version': data['tag_name'].lstrip('v'),
+                'name': data.get('name', data['tag_name']),
+                'body': data.get('body', ''),
+                'published_at': data['published_at'],
+                'commit_sha': data['target_commitish']
             }
         except Exception as e:
             logger.error(f"Failed to check for updates: {e}")
             return None
     
     def check_for_updates(self):
-        """Compare local and remote commits to check if update is available"""
+        """Compare local version with latest GitHub release"""
         current = self.get_current_commit()
-        latest = self.get_latest_remote_commit()
+        latest_release = self.get_latest_release()
         is_docker = self.is_running_in_docker()
         
-        if not latest:
+        if not latest_release:
             return {
                 'available': False, 
                 'error': 'Could not reach GitHub',
                 'is_docker': is_docker
             }
         
+        latest_commit = latest_release['commit_sha']
+        if isinstance(latest_commit, str):
+            latest_commit = latest_commit[:7]
+        
         return {
-            'available': current != latest['sha'] and current != 'unknown',
+            'available': current != latest_commit and current != 'unknown',
             'current_version': current,
-            'latest_version': latest['sha'],
-            'commit_message': latest['message'],
-            'commit_author': latest['author'],
-            'commit_date': latest['date'],
+            'latest_version': latest_release['tag_name'],
+            'latest_version_name': latest_release['name'],
+            'release_notes': latest_release['body'],
+            'published_at': latest_release['published_at'],
             'is_docker': is_docker
         }
     
