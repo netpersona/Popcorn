@@ -793,15 +793,22 @@
                     if (data.update_available) {
                         notification.style.display = 'block';
                         
+                        // Truncate release notes if too long
+                        let notes = data.release_notes || data.latest_version_name || '';
+                        if (notes.length > 200) {
+                            notes = notes.substring(0, 200) + '...';
+                        }
+                        notes = notes.split('\n')[0]; // First line only
+                        
                         if (data.is_docker) {
                             updateBtn.style.display = 'none';
                             updateMsg.innerHTML = `Version <code>${data.latest_version}</code> available<br>
-                                <small>${data.commit_message || ''}</small><br>
+                                <small>${notes}</small><br>
                                 <small style="color: var(--text-secondary); margin-top: 5px; display: block;">Running in Docker: Please pull the latest image to update.</small>`;
                         } else {
                             updateBtn.style.display = 'block';
                             updateMsg.innerHTML = `Version <code>${data.latest_version}</code> available<br>
-                                <small>${data.commit_message || ''}</small>`;
+                                <small>${notes}</small>`;
                         }
                     } else {
                         notification.style.display = 'none';
