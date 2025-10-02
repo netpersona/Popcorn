@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class UpdateManager:
-    def __init__(self, github_repo='username/popcorn', backup_dir='backups'):
+    def __init__(self, github_repo='netpersona/Popcorn', backup_dir='backups'):
         self.github_repo = github_repo
         self.backup_dir = Path(backup_dir)
         self.backup_dir.mkdir(exist_ok=True)

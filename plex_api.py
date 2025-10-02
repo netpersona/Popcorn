@@ -76,14 +76,14 @@ class PlexAPI:
             
             if playback_mode == 'web_player':
                 server_id = self.plex.machineIdentifier
-                web_url = f"https://app.plex.tv/desktop/#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}&autoplay=1&automute=0"
                 
                 if offset_ms > 0:
-                    web_url += f"&t={offset_ms}"
                     offset_min = offset_ms // 60000
-                    logger.info(f"Generated web player URL for '{movie.title}' with {offset_min} min offset")
+                    web_url = f"https://app.plex.tv/desktop/#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}&autoplay=1&automute=0&viewOffset={offset_ms}"
+                    logger.info(f"Generated web player URL for '{movie.title}' with {offset_min} min offset (viewOffset={offset_ms}ms)")
                     return True, web_url, offset_min
                 else:
+                    web_url = f"https://app.plex.tv/desktop/#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}&autoplay=1&automute=0"
                     logger.info(f"Generated web player URL for '{movie.title}'")
                     return True, web_url, 0
             

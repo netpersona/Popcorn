@@ -17,6 +17,7 @@
             --text-muted: {{ theme_colors['text-muted'] }};
             --border: {{ theme_colors['border'] }};
             --shadow: {{ theme_colors['shadow'] }};
+            --time-header-height: 40px;
         }
         
         * {
@@ -103,12 +104,12 @@
         .time-header {
             position: sticky;
             top: 0;
-            background: var(--bg-secondary);
+            background: var(--bg-secondary) !important;
             border-bottom: 1px solid var(--border);
             z-index: 10;
             display: grid;
             grid-template-columns: repeat(48, 120px);
-            height: 40px;
+            height: var(--time-header-height);
         }
 
         .time-slot {
@@ -126,9 +127,19 @@
         .channel-row {
             display: grid;
             grid-template-columns: repeat(48, 120px);
-            border-bottom: 1px solid var(--border);
             height: 120px;
             position: relative;
+        }
+        
+        .channel-row::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: -100vw;
+            bottom: 0;
+            height: 1px;
+            background: var(--border);
+            pointer-events: none;
         }
 
         .program-tile {
@@ -202,22 +213,23 @@
 
         .current-time-indicator {
             position: absolute;
-            top: 40px;
+            top: -40px;
             width: 2px;
             background: var(--accent);
-            z-index: 15;
+            z-index: 20;
             pointer-events: none;
             bottom: 0;
         }
 
         .current-time-marker {
             position: absolute;
-            top: -8px;
+            top: 13px;
             left: -6px;
             width: 14px;
             height: 14px;
             background: var(--accent);
             border-radius: 50%;
+            z-index: 20;
         }
 
         ::-webkit-scrollbar {
@@ -317,6 +329,12 @@
             flex: 1 1 auto;
             overflow-y: auto;
             min-height: 0;
+        }
+        
+        .channel-list-spacer {
+            height: var(--time-header-height);
+            flex-shrink: 0;
+            border-bottom: 1px solid var(--border);
         }
 
         .nav-menu {
@@ -478,6 +496,7 @@
 
     <div class="guide-container">
         <div class="channel-rail" id="channel-rail">
+            <div class="channel-list-spacer"></div>
             <div class="channel-list">
                 {% for channel in channels %}
                 <div class="channel-item">{{ channel.name }}</div>
@@ -522,7 +541,7 @@
                          data-duration-minutes="{{ program.duration_minutes }}"
                          data-movie-duration="{{ program.movie.duration }}">
                         {% if program.movie.poster_url %}
-                        <img src="{{ program.movie.poster_url }}" class="program-poster" alt="{{ program.movie.title }}" loading="lazy">
+                        <img src="{{ program.movie.poster_url }}" class="program-poster" alt="{{ program.movie.title }}" loading="lazy" decoding="async">
                         {% endif %}
                         <div class="program-content">
                             <div class="program-title">{{ program.movie.title }}</div>

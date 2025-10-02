@@ -164,10 +164,39 @@ docker logs popcorn
 
 # Remove container
 docker rm -f popcorn
-
-# Rebuild after updates
-docker build -t popcorn . && docker restart popcorn
 ```
+
+#### Updating Popcorn (Docker)
+
+When running in Docker, Popcorn will automatically detect updates but won't apply them automatically (Docker best practice). To update:
+
+**Step 1: Check for Updates**
+1. Go to Settings (admin only)
+2. Click "Check for Updates"
+3. If an update is available, you'll see: "Running in Docker: Please pull the latest image to update"
+
+**Step 2: Pull and Restart**
+```bash
+# Pull the latest image
+docker pull netpersona/popcorn:latest
+
+# Stop and remove the old container
+docker stop popcorn
+docker rm popcorn
+
+# Start with the new image (use your original docker run command)
+docker run -d \
+  --name popcorn \
+  -p 5000:5000 \
+  -e SESSION_SECRET="your-secret-here" \
+  -e PLEX_URL="http://192.168.1.100:32400" \
+  -e PLEX_TOKEN="your-token" \
+  -v popcorn-data:/app \
+  --restart unless-stopped \
+  netpersona/popcorn:latest
+```
+
+**Note:** Your database and settings are preserved in the volume, so you won't lose any data.
 
 ---
 
@@ -303,6 +332,94 @@ To update Popcorn with new movies:
 3. Popcorn scans your Plex library for new movies
 4. New movies are added to appropriate channels
 5. Schedules are regenerated automatically
+
+### Theme Customization
+
+Popcorn includes 11 built-in themes plus support for custom themes:
+
+**Built-in Themes:**
+- **Plex** - Classic Plex dark theme (default)
+- **Halloween** - Orange and black with coral accents
+- **Hell-o-ween** - Dark and fiery with orange/red accents
+- **Pastel Dream** - Soft pastel colors
+- **Plastic** - Modern gradient design
+- **Popcorn** - Warm theater-inspired colors
+- **Midnight Harmony** - Deep blues and purples
+- **Ichor Wine** - Rich burgundy tones
+- **Vampirism** - Dark purple vampire aesthetic
+- **Lavender** - Soft purple theme
+- **Starry Night** - Dark blue night sky theme
+
+**Changing Your Theme:**
+1. Navigate to Profile page (via hamburger menu)
+2. Find the "Theme Selection" section
+3. Choose from the dropdown
+4. Click "Save Theme"
+5. Theme applies instantly across all pages
+
+**Creating Custom Themes:**
+
+You can upload your own custom theme JSON files:
+
+1. Go to Profile page
+2. Click "Upload Theme" button
+3. Select your JSON theme file (max 50KB)
+4. Theme appears with a ⭐ star icon
+5. Select and save to apply
+
+**Custom Theme Format:**
+
+Create a JSON file with the following structure:
+
+```json
+{
+  "name": "My Custom Theme",
+  "description": "A unique theme I created",
+  "bg-primary": "#1a1a1a",
+  "bg-secondary": "#2d2d2d",
+  "bg-tertiary": "#3d3d3d",
+  "accent": "#ff6b6b",
+  "accent-hover": "#ff5252",
+  "text-primary": "#ffffff",
+  "text-secondary": "#cccccc",
+  "text-muted": "#888888",
+  "border": "#444444",
+  "shadow": "rgba(0, 0, 0, 0.3)"
+}
+```
+
+**Requirements:**
+- All 10 color properties are required
+- Must be valid JSON format
+- File size under 50KB
+- Use valid CSS color values (hex, rgb, rgba)
+
+**Managing Custom Themes:**
+- Your custom themes show with a ⭐ star icon
+- Click the trash icon to delete themes you own
+- Admins can mark custom themes as public for all users
+
+### Playback Settings
+
+Configure how movies play when you click them:
+
+**Playback Mode:**
+- **Web Player** (default) - Opens in browser
+- **Client Playback** - Sends to configured Plex device (Roku, Apple TV, etc.)
+
+**Time Offset:**
+- **Enabled** (default) - Movies start at their current "live" position
+- **Disabled** - Movies always start from the beginning
+
+Access these settings from your Profile page.
+
+### User Profile
+
+Your profile page shows:
+- **Username and email** - Account information
+- **Theme selection** - Choose or upload themes
+- **Playback settings** - Configure movie playback
+- **Avatar** - Circular profile picture
 
 ---
 
@@ -557,6 +674,201 @@ location /popcorn/ {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 }
 ```
+
+---
+
+## Admin Guide
+
+This section covers features available only to administrator accounts.
+
+### User Management
+
+Admins can manage user accounts and create invitation codes.
+
+**Accessing User Management:**
+1. Open the hamburger menu
+2. Click "Settings" (admin only)
+3. Navigate to "User Management" section
+
+**Creating Invitation Codes:**
+1. Go to Settings → User Management
+2. Click "Create Invitation Code"
+3. Optionally set an email and expiration date
+4. Share the code with new users
+5. Users register at `/register?code=YOUR_CODE`
+
+**Managing Users:**
+- View all registered users
+- Toggle admin privileges
+- Activate/deactivate accounts
+- View registration and login history
+
+**User Roles:**
+- **Admin** - Full access to settings, user management, and updates
+- **User** - Access to guide, channels, profile, and theme customization
+
+### Auto-Update System
+
+**For Native Installations (Non-Docker):**
+
+Popcorn includes an intelligent auto-update system that checks GitHub for new releases:
+
+**Checking for Updates:**
+1. Go to Settings
+2. Scroll to "Updates" section
+3. Click "Check for Updates"
+4. System shows current version and available updates
+
+**Applying Updates:**
+1. When update is available, click "Update Now"
+2. Watch real-time progress:
+   - Database backup created automatically
+   - Latest code downloaded from GitHub
+   - Dependencies updated
+   - Database migrations applied
+3. On success: Restart the application
+4. On failure: Automatic rollback to backup
+
+**Update Features:**
+- Automatic database backup before updates
+- Real-time progress streaming
+- Migration tracking (no duplicate migrations)
+- Automatic rollback on failure
+- Version history tracking
+
+**For Docker Installations:**
+
+Docker containers are updated differently:
+
+1. Go to Settings → Updates
+2. Click "Check for Updates"
+3. If available, message shows: "Running in Docker: Please pull the latest image to update"
+4. Follow Docker update instructions (see Docker section above)
+
+**Update Source:**
+- Updates are checked from: `https://github.com/netpersona/Popcorn`
+- Configurable in database settings
+- Checks `/releases/latest` for new versions
+
+### Settings Configuration
+
+**Plex Connection:**
+- Configure Plex URL and token
+- Test connection to verify credentials
+- View available Plex clients for playback
+
+**Schedule Management:**
+- Set reshuffle frequency (daily, weekly, monthly)
+- Manually trigger schedule regeneration
+- View last reshuffle date
+
+**System Information:**
+- View current version and commit
+- Check for updates
+- Review deployment environment (Docker/Native)
+
+### Managing Custom Themes
+
+**Theme Permissions:**
+- All users can upload and use custom themes
+- Admins can mark custom themes as "public"
+- Public themes are available to all users
+
+**Making Themes Public:**
+1. Navigate to Profile
+2. Find the custom theme
+3. (Admin only) Click "Make Public"
+4. Theme now appears for all users
+
+**Theme Management:**
+- Monitor uploaded custom themes
+- Delete inappropriate themes
+- Set default theme for new users
+
+### Security Best Practices
+
+1. **Keep SESSION_SECRET secure** - Never share this value
+2. **Protect ADMIN_SETUP_TOKEN** - Used for first admin registration only
+3. **Regularly update** - Apply security patches when available
+4. **Monitor user activity** - Review login history
+5. **Use strong passwords** - Enforce for local auth users
+6. **Limit admin access** - Only trusted users should have admin privileges
+
+### Backup and Maintenance
+
+**Database Backups:**
+- Auto-update system creates backups before updates
+- Located in `/backups` directory
+- Timestamped format: `popcorn_YYYYMMDD_HHMMSS.db`
+
+**Manual Backup:**
+```bash
+# Docker
+docker cp popcorn:/app/popcorn.db ./backup-$(date +%Y%m%d).db
+
+# Direct Installation
+cp popcorn.db backup-$(date +%Y%m%d).db
+```
+
+**Restore from Backup:**
+```bash
+# Docker
+docker stop popcorn
+docker cp ./backup.db popcorn:/app/popcorn.db
+docker start popcorn
+
+# Direct Installation
+cp backup.db popcorn.db
+python app.py
+```
+
+### Migration Management
+
+Popcorn automatically tracks and applies database migrations:
+
+**Migration System:**
+- Migrations stored in `/migrations` directory
+- Tracked in `migration_history` table
+- Only new migrations are applied
+- Prevents duplicate execution
+
+**Viewing Migrations:**
+```bash
+# Docker
+docker exec popcorn ls -l /app/migrations
+
+# Direct Installation
+ls -l migrations/
+```
+
+**Migration History:**
+All applied migrations are recorded with timestamps to prevent re-execution.
+
+### Troubleshooting Admin Issues
+
+**Problem: Can't Access Admin Features**
+
+**Solutions:**
+1. Verify your account has admin privileges
+2. Check User Management to see your role
+3. Contact the original admin to grant permissions
+
+**Problem: Update Failed**
+
+**Solutions:**
+1. Check application logs for errors
+2. Database backup is automatically restored
+3. Verify GitHub connectivity
+4. Check available disk space
+5. Try manual update via git pull
+
+**Problem: Users Can't Register**
+
+**Solutions:**
+1. Verify invitation code is valid and not expired
+2. Check code is active in User Management
+3. Ensure ADMIN_SETUP_TOKEN is secure (first admin only)
+4. Check application logs for registration errors
 
 ---
 

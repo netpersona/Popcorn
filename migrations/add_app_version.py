@@ -41,7 +41,7 @@ def migrate():
                 current_commit TEXT,
                 last_check_date TIMESTAMP,
                 last_update_date TIMESTAMP,
-                github_repo TEXT DEFAULT 'username/popcorn',
+                github_repo TEXT DEFAULT 'netpersona/Popcorn',
                 update_available INTEGER DEFAULT 0,
                 latest_version TEXT
             )
@@ -52,7 +52,7 @@ def migrate():
         cursor.execute("""
             INSERT INTO app_version (current_version, current_commit, last_update_date, github_repo)
             VALUES (?, ?, ?, ?)
-        """, ('1.0.0', current_commit, datetime.utcnow(), 'username/popcorn'))
+        """, ('1.0.0', current_commit, datetime.utcnow(), 'netpersona/Popcorn'))
         
         conn.commit()
         print("✓ app_version table created and initialized")

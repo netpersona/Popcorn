@@ -4,7 +4,7 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for, f
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
-from models import init_db, get_session, Settings, User
+from models import init_db, get_session, Settings, User, Movie
 from plex_api import PlexAPI
 from scheduler import ScheduleGenerator
 from auth import PlexOAuth, create_or_update_plex_user
@@ -492,9 +492,10 @@ def settings():
                 logger.info("Plex API reconnected with new settings")
                 
                 sync_movies()
+                scheduler.generate_all_schedules(force=True)
                 
                 movie_count = session.query(Movie).count()
-                flash(f'Plex connected successfully! Synced {movie_count} movies.', 'success')
+                flash(f'Plex connected successfully! Synced {movie_count} movies and generated schedules.', 'success')
                 return redirect(url_for('settings', plex_saved=1))
             except Exception as e:
                 logger.error(f"Failed to connect to Plex with new settings: {e}")
