@@ -6,6 +6,19 @@
     <title>{{ channel_name }} - Popcorn</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,55 +26,141 @@
         }
 
         body {
-            background: #121212;
-            color: #e0e0e0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
         }
 
         .header {
-            background: #1a1a1a;
+            background: var(--bg-secondary);
             padding: 15px 20px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-menu-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-menu-toggle:hover {
+            color: var(--accent);
+        }
+
         .header-title {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #e5a00d;
-        }
-
-        .nav-buttons {
+            color: var(--accent);
             display: flex;
+            align-items: center;
             gap: 10px;
         }
 
-        .nav-btn {
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
-            color: #e0e0e0;
-            padding: 8px 15px;
-            border-radius: 4px;
+        .header-title img {
+            height: 32px;
+            width: 32px;
+        }
+
+        .nav-menu {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px var(--shadow);
+            overflow-y: auto;
+        }
+
+        .nav-menu.open {
+            left: 0;
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-backdrop.show {
+            display: block;
+        }
+
+        .menu-section {
+            padding: 15px 0;
+        }
+
+        .menu-section-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .menu-item {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 15px 20px;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.95rem;
             transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            text-align: left;
             text-decoration: none;
-            display: inline-block;
         }
 
-        .nav-btn:hover {
-            background: #3a3a3a;
-            color: #e0e0e0;
+        .menu-item:hover {
+            background: var(--bg-tertiary);
         }
 
-        .nav-btn.active {
-            background: #e5a00d;
-            color: #121212;
-            border-color: #e5a00d;
+        .menu-item.active {
+            background: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .menu-item.active i {
+            opacity: 1;
+        }
+
+        .menu-spacer {
+            flex: 1;
         }
 
         .container {
@@ -71,9 +170,9 @@
         }
 
         .back-button {
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
-            color: #e0e0e0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
             padding: 10px 20px;
             border-radius: 4px;
             text-decoration: none;
@@ -85,8 +184,8 @@
         }
 
         .back-button:hover {
-            background: #3a3a3a;
-            color: #e0e0e0;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
         }
 
         .page-header h1 {
@@ -95,16 +194,16 @@
         }
 
         .now-playing-card {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 8px;
             padding: 30px;
             margin-bottom: 30px;
         }
 
         .now-playing-badge {
-            background: linear-gradient(135deg, #e5a00d 0%, #cc8f0a 100%);
-            color: #121212;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: var(--bg-primary);
             padding: 8px 16px;
             border-radius: 4px;
             display: inline-block;
@@ -120,20 +219,20 @@
         }
 
         .movie-meta {
-            color: #999;
+            color: var(--text-muted);
             margin-bottom: 15px;
         }
 
         .movie-summary {
-            color: #ccc;
+            color: var(--text-secondary);
             line-height: 1.6;
             margin-bottom: 20px;
         }
 
         .play-button {
-            background: #e5a00d;
+            background: var(--accent);
             border: none;
-            color: #121212;
+            color: var(--bg-primary);
             padding: 12px 30px;
             border-radius: 4px;
             font-size: 1rem;
@@ -146,21 +245,21 @@
         }
 
         .play-button:hover {
-            background: #cc8f0a;
+            background: var(--accent-hover);
             transform: scale(1.05);
         }
 
         .schedule-card {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
         }
 
         .schedule-header {
-            background: #202020;
+            background: var(--bg-tertiary);
             padding: 20px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
         }
 
         .schedule-header h4 {
@@ -176,7 +275,7 @@
         }
 
         .schedule-item {
-            background: #2a2a2a;
+            background: var(--bg-tertiary);
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 12px;
@@ -188,7 +287,7 @@
 
         .schedule-time {
             font-weight: 600;
-            color: #e5a00d;
+            color: var(--accent);
             min-width: 80px;
         }
 
@@ -202,14 +301,14 @@
         }
 
         .schedule-info small {
-            color: #999;
+            color: var(--text-muted);
             font-size: 0.85rem;
         }
 
         .schedule-play {
-            background: #3a3a3a;
-            border: 1px solid #4a4a4a;
-            color: #e0e0e0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
             padding: 8px 16px;
             border-radius: 4px;
             font-size: 0.85rem;
@@ -221,26 +320,59 @@
         }
 
         .schedule-play:hover {
-            background: #4a4a4a;
+            background: var(--bg-primary);
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="header-title">
-            <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
-            Popcorn TV Guide
+    <div class="menu-backdrop" id="menuBackdrop" onclick="toggleMenu()"></div>
+    
+    <nav class="nav-menu" id="navMenu">
+        <div class="menu-section">
+            <a href="/guide" class="menu-item">
+                <i class="fas fa-th"></i>
+                <span>TV Guide</span>
+            </a>
+            <a href="/channels" class="menu-item active">
+                <i class="fas fa-list"></i>
+                <span>Channels</span>
+            </a>
         </div>
-        <div class="nav-buttons">
-            <a href="/guide" class="nav-btn">
-                <i class="fas fa-th"></i> Guide
+        
+        <div class="menu-section-separator"></div>
+        
+        <div class="menu-section">
+            <a href="/profile" class="menu-item">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
             </a>
-            <a href="/channels" class="nav-btn active">
-                <i class="fas fa-list"></i> Channels
+            <a href="/settings" class="menu-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
             </a>
-            <a href="/settings" class="nav-btn">
-                <i class="fas fa-cog"></i> Settings
+        </div>
+        
+        <div class="menu-spacer"></div>
+        
+        <div class="menu-section-separator"></div>
+        
+        <div class="menu-section">
+            <a href="/logout" class="menu-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
             </a>
+        </div>
+    </nav>
+
+    <div class="header">
+        <div class="header-left">
+            <button class="header-menu-toggle" onclick="toggleMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="header-title">
+                <img src="/static/images/logo.png" alt="Popcorn">
+                Popcorn TV Guide
+            </div>
         </div>
     </div>
 
@@ -297,6 +429,13 @@
     </div>
 
     <script>
+        function toggleMenu() {
+            const menu = document.getElementById('navMenu');
+            const backdrop = document.getElementById('menuBackdrop');
+            menu.classList.toggle('open');
+            backdrop.classList.toggle('show');
+        }
+
         function playMovie(movieId) {
             window.open(`/deeplink/${movieId}`, '_blank', 'noopener,noreferrer');
         }

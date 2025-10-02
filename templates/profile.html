@@ -327,6 +327,89 @@
             color: var(--text-muted);
             margin-top: 8px;
         }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px var(--shadow);
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text-primary);
+            font-size: 1.3rem;
+        }
+
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .close-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
     </style>
 </head>
 <body>
@@ -411,8 +494,14 @@
                     <div class="theme-preview">
                         {% for theme_id, theme_data in themes.items() %}
                         <div class="theme-option {% if current_user.theme == theme_id %}selected{% endif %}" 
-                             onclick="selectTheme('{{ theme_id }}')">
-                            <div class="theme-name">{{ theme_data.name }}</div>
+                             onclick="selectTheme('{{ theme_id }}')"
+                             style="position: relative;">
+                            <div class="theme-name">
+                                {{ theme_data.name }}
+                                {% if theme_data.get('_custom') %}
+                                <i class="fas fa-star" style="color: var(--accent); margin-left: 5px;" title="Custom Theme"></i>
+                                {% endif %}
+                            </div>
                             <div class="theme-description">{{ theme_data.description }}</div>
                             <div class="theme-colors">
                                 <div class="color-swatch" style="background: {{ theme_data.colors['bg-primary'] }}"></div>
@@ -420,6 +509,14 @@
                                 <div class="color-swatch" style="background: {{ theme_data.colors['accent'] }}"></div>
                                 <div class="color-swatch" style="background: {{ theme_data.colors['text-primary'] }}"></div>
                             </div>
+                            {% if theme_data.get('_custom') and theme_data.get('_owner_id') == current_user.id %}
+                            <button class="delete-theme-btn" onclick="event.stopPropagation(); deleteTheme({{ theme_data._theme_id }}, '{{ theme_data.name }}')" 
+                                    style="position: absolute; top: 10px; right: 10px; background: #d32f2f; color: white; border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; opacity: 0.7; transition: opacity 0.2s;"
+                                    onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'"
+                                    title="Delete this theme">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            {% endif %}
                         </div>
                         {% endfor %}
                     </div>
@@ -428,6 +525,9 @@
                         <button type="submit" class="btn-primary">
                             <i class="fas fa-save"></i> Save Theme
                         </button>
+                        <button type="button" class="btn-secondary" onclick="openUploadModal()">
+                            <i class="fas fa-upload"></i> Upload Theme
+                        </button>
                         <a href="/guide" class="btn-secondary">
                             <i class="fas fa-times"></i> Cancel
                         </a>
@@ -435,8 +535,7 @@
                 </form>
 
                 <div class="help-text" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
-                    <i class="fas fa-info-circle"></i> <strong>Custom Themes:</strong> Want to create your own theme? 
-                    You can import custom themes created by the community (coming soon).
+                    <i class="fas fa-info-circle"></i> <strong>Custom Themes:</strong> Upload your own theme JSON file or download themes from the community.
                 </div>
             </div>
         </div>
@@ -465,6 +564,35 @@
         </div>
     </div>
 
+    <div id="upload-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-upload"></i> Upload Custom Theme</h3>
+                <button class="close-btn" onclick="closeUploadModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                    Upload a JSON file containing your custom theme. Your theme must include all required color properties.
+                </p>
+                
+                <div class="form-group">
+                    <label for="theme-file">Select Theme File (.json)</label>
+                    <input type="file" id="theme-file" accept=".json" style="width: 100%; padding: 10px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary);">
+                </div>
+                
+                <div id="upload-status" style="margin-top: 15px; display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" onclick="uploadTheme()">
+                    <i class="fas fa-upload"></i> Upload
+                </button>
+                <button class="btn-secondary" onclick="closeUploadModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function toggleMenu() {
             const menu = document.getElementById('nav-menu');
@@ -480,6 +608,83 @@
             });
             event.currentTarget.classList.add('selected');
             document.getElementById('theme-input').value = themeId;
+        }
+        
+        function openUploadModal() {
+            document.getElementById('upload-modal').style.display = 'flex';
+            document.getElementById('upload-status').style.display = 'none';
+            document.getElementById('theme-file').value = '';
+        }
+        
+        function closeUploadModal() {
+            document.getElementById('upload-modal').style.display = 'none';
+        }
+        
+        async function uploadTheme() {
+            const fileInput = document.getElementById('theme-file');
+            const statusDiv = document.getElementById('upload-status');
+            
+            if (!fileInput.files || !fileInput.files[0]) {
+                statusDiv.innerHTML = '<div class="alert" style="background: #d32f2f; color: white;"><i class="fas fa-exclamation-circle"></i> Please select a file</div>';
+                statusDiv.style.display = 'block';
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('theme_file', fileInput.files[0]);
+            
+            statusDiv.innerHTML = '<div class="alert" style="background: var(--accent); color: white;"><i class="fas fa-spinner fa-spin"></i> Uploading theme...</div>';
+            statusDiv.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/themes/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusDiv.innerHTML = '<div class="alert" style="background: #4CAF50; color: white;"><i class="fas fa-check-circle"></i> ' + data.message + '</div>';
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    statusDiv.innerHTML = '<div class="alert" style="background: #d32f2f; color: white;"><i class="fas fa-exclamation-circle"></i> ' + data.message + '</div>';
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="alert" style="background: #d32f2f; color: white;"><i class="fas fa-exclamation-circle"></i> Upload failed: ' + error.message + '</div>';
+            }
+        }
+        
+        async function deleteTheme(themeId, themeName) {
+            if (!confirm(`Are you sure you want to delete the theme "${themeName}"?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/themes/${themeId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete theme: ' + data.message);
+                }
+            } catch (error) {
+                alert('Failed to delete theme: ' + error.message);
+            }
+        }
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('upload-modal');
+            if (event.target === modal) {
+                closeUploadModal();
+            }
         }
     </script>
 </body>

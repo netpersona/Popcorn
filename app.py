@@ -316,10 +316,9 @@ def logout():
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    import json
+    from theme_service import ThemeService
     
-    with open('themes.json', 'r') as f:
-        themes = json.load(f)
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
     
     if request.method == 'POST':
         theme = request.form.get('theme')
@@ -332,7 +331,7 @@ def profile():
             return redirect(url_for('profile'))
     
     user_theme = current_user.theme if current_user.theme else 'plex'
-    theme_colors = themes.get(user_theme, themes['plex'])['colors']
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
     
     return render_template('profile.html', themes=themes, theme_colors=theme_colors)
 
@@ -344,10 +343,15 @@ def index():
 @app.route('/guide')
 @login_required
 def guide():
-    import json
+    from theme_service import ThemeService
+    
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
     
     if not scheduler:
-        return render_template('error.html', message="Application not initialized")
+        return render_template('error.html', message="Application not initialized", theme_colors=theme_colors)
     
     channels = scheduler.get_all_channels()
     
@@ -380,12 +384,6 @@ def guide():
     settings_obj = session.query(Settings).first()
     enable_time_offset = settings_obj.enable_time_offset if settings_obj else True
     
-    with open('themes.json', 'r') as f:
-        themes = json.load(f)
-    
-    user_theme = current_user.theme if current_user.theme else 'plex'
-    theme_colors = themes.get(user_theme, themes['plex'])['colors']
-    
     return render_template('guide.html', 
                          channels=guide_data, 
                          current_minutes=current_minutes,
@@ -395,10 +393,15 @@ def guide():
 @app.route('/channels')
 @login_required
 def channels_list():
-    import json
+    from theme_service import ThemeService
+    
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
     
     if not scheduler:
-        return render_template('error.html', message="Application not initialized")
+        return render_template('error.html', message="Application not initialized", theme_colors=theme_colors)
     
     channels = scheduler.get_all_channels()
     
@@ -410,19 +413,20 @@ def channels_list():
             'current': current.movie if current else None
         })
     
-    with open('themes.json', 'r') as f:
-        themes = json.load(f)
-    
-    user_theme = current_user.theme if current_user.theme else 'plex'
-    theme_colors = themes.get(user_theme, themes['plex'])['colors']
-    
     return render_template('index.html', channels=channel_info, theme_colors=theme_colors)
 
 @app.route('/channel/<channel_name>')
 @login_required
 def channel(channel_name):
+    from theme_service import ThemeService
+    
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
+    
     if not scheduler:
-        return render_template('error.html', message="Application not initialized")
+        return render_template('error.html', message="Application not initialized", theme_colors=theme_colors)
     
     current = scheduler.get_current_playing(channel_name)
     schedule = scheduler.get_channel_schedule(channel_name)
@@ -430,7 +434,8 @@ def channel(channel_name):
     return render_template('channel.html', 
                          channel_name=channel_name,
                          current=current,
-                         schedule=schedule)
+                         schedule=schedule,
+                         theme_colors=theme_colors)
 
 @app.route('/play/<int:movie_id>', methods=['POST'])
 @login_required
@@ -521,12 +526,11 @@ def settings():
     reshuffled = request.args.get('reshuffled')
     plex_saved = request.args.get('plex_saved')
     
-    import json
-    with open('themes.json', 'r') as f:
-        themes = json.load(f)
+    from theme_service import ThemeService
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
     
     user_theme = current_user.theme if current_user.theme else 'plex'
-    theme_colors = themes.get(user_theme, themes['plex'])['colors']
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
     
     return render_template('settings.html', settings=settings_obj, reshuffled=reshuffled, plex_saved=plex_saved, theme_colors=theme_colors)
 
@@ -589,27 +593,213 @@ def api_deeplink(movie_id):
         'movie_title': movie.title
     })
 
+@app.route('/api/update/check')
+@login_required
+def check_for_updates():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Admin access required'}), 403
+    
+    from updater import UpdateManager
+    from models import AppVersion
+    
+    session = get_session()
+    version_record = session.query(AppVersion).first()
+    
+    if not version_record:
+        version_record = AppVersion(
+            current_version='1.0.0',
+            current_commit=UpdateManager().get_current_commit()
+        )
+        session.add(version_record)
+        session.commit()
+    
+    updater = UpdateManager(github_repo=version_record.github_repo)
+    update_info = updater.check_for_updates()
+    
+    if update_info.get('available'):
+        version_record.update_available = True
+        version_record.latest_version = update_info['latest_version']
+        version_record.last_check_date = datetime.utcnow()
+    else:
+        version_record.update_available = False
+    
+    session.commit()
+    
+    return jsonify({
+        'success': True,
+        'current_version': update_info.get('current_version', 'unknown'),
+        'latest_version': update_info.get('latest_version', 'unknown'),
+        'update_available': update_info.get('available', False),
+        'commit_message': update_info.get('commit_message'),
+        'commit_author': update_info.get('commit_author'),
+        'commit_date': update_info.get('commit_date'),
+        'error': update_info.get('error'),
+        'is_docker': update_info.get('is_docker', False)
+    })
+
+@app.route('/api/update/stream')
+@login_required
+def update_stream():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Admin access required'}), 403
+    
+    from updater import UpdateManager
+    from models import AppVersion
+    import queue
+    import threading
+    
+    session = get_session()
+    version_record = session.query(AppVersion).first()
+    github_repo = version_record.github_repo if version_record else 'netpersona/Popcorn'
+    
+    message_queue = queue.Queue()
+    updater = UpdateManager(github_repo=github_repo)
+    
+    def progress_callback(step, message, progress):
+        message_queue.put({
+            'step': step,
+            'message': message,
+            'progress': progress
+        })
+    
+    def perform_update_async():
+        try:
+            result = updater.perform_update(progress_callback)
+            message_queue.put({'done': True, 'result': result})
+        except Exception as e:
+            message_queue.put({'error': str(e)})
+    
+    update_thread = threading.Thread(target=perform_update_async)
+    update_thread.daemon = True
+    update_thread.start()
+    
+    def generate():
+        while True:
+            try:
+                msg = message_queue.get(timeout=30)
+                
+                if 'done' in msg:
+                    yield f"data: {json.dumps(msg)}\n\n"
+                    break
+                elif 'error' in msg:
+                    yield f"data: {json.dumps(msg)}\n\n"
+                    break
+                else:
+                    yield f"data: {json.dumps(msg)}\n\n"
+            except queue.Empty:
+                yield f"data: {json.dumps({'heartbeat': True})}\n\n"
+    
+    return app.response_class(
+        generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no'
+        }
+    )
+
+@app.route('/api/update/apply', methods=['POST'])
+@login_required
+def apply_update():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Admin access required'}), 403
+    
+    from updater import UpdateManager
+    from models import AppVersion
+    
+    session = get_session()
+    version_record = session.query(AppVersion).first()
+    github_repo = version_record.github_repo if version_record else 'netpersona/Popcorn'
+    
+    updater = UpdateManager(github_repo=github_repo)
+    result = updater.perform_update()
+    
+    return jsonify(result)
+
+@app.route('/api/themes/upload', methods=['POST'])
+@login_required
+def upload_theme():
+    if 'theme_file' not in request.files:
+        return jsonify({'success': False, 'message': 'No file uploaded'}), 400
+    
+    file = request.files['theme_file']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No file selected'}), 400
+    
+    try:
+        theme_json = file.read().decode('utf-8')
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Failed to read file: {str(e)}'}), 400
+    
+    from theme_service import ThemeService
+    is_public = request.form.get('is_public') == 'true' if current_user.is_admin else False
+    
+    success, error, theme = ThemeService.save_custom_theme(
+        user_id=current_user.id,
+        theme_json_str=theme_json,
+        is_public=is_public
+    )
+    
+    if success:
+        return jsonify({
+            'success': True,
+            'message': 'Theme uploaded successfully',
+            'theme': {
+                'id': theme.id,
+                'name': theme.name,
+                'slug': theme.slug
+            }
+        })
+    else:
+        return jsonify({'success': False, 'message': error}), 400
+
+@app.route('/api/themes/custom')
+@login_required
+def get_custom_themes():
+    from theme_service import ThemeService
+    themes = ThemeService.get_user_custom_themes(current_user.id)
+    return jsonify({'success': True, 'themes': themes})
+
+@app.route('/api/themes/<int:theme_id>', methods=['DELETE'])
+@login_required
+def delete_theme(theme_id):
+    from theme_service import ThemeService
+    success, error = ThemeService.delete_custom_theme(current_user.id, theme_id)
+    
+    if success:
+        return jsonify({'success': True, 'message': 'Theme deleted successfully'})
+    else:
+        return jsonify({'success': False, 'message': error}), 400
+
 @app.route('/deeplink/<int:movie_id>')
 @login_required
 def deeplink(movie_id):
+    from theme_service import ThemeService
+    
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
+    
     if not plex_api:
-        return render_template('error.html', message="Plex API not available")
+        return render_template('error.html', message="Plex API not available", theme_colors=theme_colors)
     
     from models import Movie
     session = get_session()
     movie = session.query(Movie).filter_by(id=movie_id).first()
     
     if not movie:
-        return render_template('error.html', message="Movie not found")
+        return render_template('error.html', message="Movie not found", theme_colors=theme_colors)
     
     deep_link = plex_api.get_movie_deep_link(movie.plex_id)
     if not deep_link:
-        return render_template('error.html', message="Could not generate deep link")
+        return render_template('error.html', message="Could not generate deep link", theme_colors=theme_colors)
     
     return render_template('deeplink.html',
                          movie_title=movie.title,
                          plex_uri=deep_link['plex_uri'],
-                         web_url=deep_link['web_url'])
+                         web_url=deep_link['web_url'],
+                         theme_colors=theme_colors)
 
 @app.route('/sync', methods=['POST'])
 @login_required

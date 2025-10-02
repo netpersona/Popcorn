@@ -15,20 +15,36 @@
       "shadow": "rgba(0, 0, 0, 0.5)"
     }
   },
-  "olive": {
-    "name": "Olive",
-    "description": "Earthy tones with warm accents",
+  "halloween": {
+    "name": "Halloween",
+    "description": "Spooky season theme with coral, brown, and cream tones",
     "colors": {
-      "bg-primary": "#283618",
-      "bg-secondary": "#606c38",
-      "bg-tertiary": "#4a5228",
-      "accent": "#dda15e",
-      "accent-hover": "#edb16e",
-      "text-primary": "#fefae0",
-      "text-secondary": "#dda15e",
-      "text-muted": "#bc6c25",
-      "border": "#606c38",
-      "shadow": "rgba(0, 0, 0, 0.6)"
+      "bg-primary": "#F7EEDD",
+      "bg-secondary": "#ede4d3",
+      "bg-tertiary": "#c4bcab",
+      "accent": "#FF7F50",
+      "accent-hover": "#ffd299",
+      "text-primary": "#000000",
+      "text-secondary": "#2c2c2c",
+      "text-muted": "#8f1e00",
+      "border": "#dd6236",
+      "shadow": "rgba(255, 127, 80, 0.3)"
+    }
+  },
+  "hell_o_ween": {
+    "name": "Hell-o-ween",
+    "description": "Dark theme with fiery orange and red accents",
+    "colors": {
+      "bg-primary": "#1C1C1C",
+      "bg-secondary": "#2b2b2b",
+      "bg-tertiary": "#434343",
+      "accent": "#FF4500",
+      "accent-hover": "#ff7b3a",
+      "text-primary": "#FFFFFF",
+      "text-secondary": "#e0e0e0",
+      "text-muted": "#ffa282",
+      "border": "#8B0000",
+      "shadow": "rgba(255, 69, 0, 0.4)"
     }
   },
   "pastel_dream": {

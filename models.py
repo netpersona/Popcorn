@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Date, UniqueConstraint, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, Date, UniqueConstraint, Boolean, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -127,6 +127,49 @@ class User(Base):
     
     def __repr__(self):
         return f"<User(username='{self.username}', email='{self.email}')>"
+
+class AppVersion(Base):
+    __tablename__ = 'app_version'
+    
+    id = Column(Integer, primary_key=True)
+    current_version = Column(String, nullable=False)
+    current_commit = Column(String)
+    last_check_date = Column(DateTime)
+    last_update_date = Column(DateTime)
+    github_repo = Column(String, default='netpersona/Popcorn')
+    update_available = Column(Boolean, default=False)
+    latest_version = Column(String)
+    
+    def __repr__(self):
+        return f"<AppVersion(version='{self.current_version}', commit='{self.current_commit}')>"
+
+class MigrationHistory(Base):
+    __tablename__ = 'migration_history'
+    
+    id = Column(Integer, primary_key=True)
+    migration_name = Column(String, unique=True, nullable=False)
+    applied_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<MigrationHistory(migration='{self.migration_name}')>"
+
+class CustomTheme(Base):
+    __tablename__ = 'custom_themes'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    name = Column(String, nullable=False)
+    slug = Column(String, nullable=False)
+    description = Column(String)
+    theme_json = Column(Text, nullable=False)
+    is_public = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (UniqueConstraint('user_id', 'slug', name='_user_slug_uc'),)
+    
+    def __repr__(self):
+        return f"<CustomTheme(name='{self.name}', user_id={self.user_id})>"
 
 def init_db(db_path='popcorn.db'):
     engine = create_engine(f'sqlite:///{db_path}')

@@ -640,6 +640,33 @@
             <div class="sidebar-settings">
                 <div class="settings-card">
                     <div class="card-header">
+                        <h4><i class="fas fa-sync-alt"></i> Updates</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Current Version</label>
+                            <div class="form-static" id="currentVersion">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </div>
+                        </div>
+
+                        <div id="updateNotification" style="display: none; background: #4d3a1a; border: 1px solid #6d5a2a; color: #fbbf24; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                            <i class="fas fa-exclamation-circle"></i> <strong>Update Available!</strong>
+                            <p style="margin: 10px 0 0 0; font-size: 0.85rem;" id="updateMessage"></p>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" onclick="checkForUpdates()" id="checkUpdateBtn" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-search"></i> Check for Updates
+                        </button>
+
+                        <button type="button" class="btn btn-warning" onclick="startUpdate()" id="updateNowBtn" style="width: 100%; display: none; background: #fbbf24; color: #000;">
+                            <i class="fas fa-download"></i> Update Now
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
                         <h4><i class="fas fa-info-circle"></i> About</h4>
                     </div>
                     <div class="card-body">
@@ -744,6 +771,147 @@
                 btn.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
             }
         });
+
+        // Update System Functions
+        async function checkForUpdates() {
+            const btn = document.getElementById('checkUpdateBtn');
+            const versionDiv = document.getElementById('currentVersion');
+            const notification = document.getElementById('updateNotification');
+            const updateBtn = document.getElementById('updateNowBtn');
+            const updateMsg = document.getElementById('updateMessage');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+
+            try {
+                const response = await fetch('/api/update/check');
+                const data = await response.json();
+
+                if (data.success) {
+                    versionDiv.innerHTML = `<code style="color: var(--accent);">${data.current_version}</code>`;
+
+                    if (data.update_available) {
+                        notification.style.display = 'block';
+                        
+                        if (data.is_docker) {
+                            updateBtn.style.display = 'none';
+                            updateMsg.innerHTML = `Version <code>${data.latest_version}</code> available<br>
+                                <small>${data.commit_message || ''}</small><br>
+                                <small style="color: var(--text-secondary); margin-top: 5px; display: block;">Running in Docker: Please pull the latest image to update.</small>`;
+                        } else {
+                            updateBtn.style.display = 'block';
+                            updateMsg.innerHTML = `Version <code>${data.latest_version}</code> available<br>
+                                <small>${data.commit_message || ''}</small>`;
+                        }
+                    } else {
+                        notification.style.display = 'none';
+                        updateBtn.style.display = 'none';
+                        versionDiv.innerHTML += '<br><small style="color: var(--text-secondary);">✓ Up to date</small>';
+                    }
+                } else {
+                    versionDiv.innerHTML = '<small style="color: #f87171;">Error checking version</small>';
+                }
+            } catch (error) {
+                versionDiv.innerHTML = '<small style="color: #f87171;">Error: ' + error.message + '</small>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> Check for Updates';
+            }
+        }
+
+        function startUpdate() {
+            const modal = document.getElementById('updateModal');
+            const progressList = document.getElementById('updateProgress');
+            const progressBar = document.getElementById('updateProgressBar');
+            const closeBtn = document.getElementById('closeUpdateModal');
+
+            modal.style.display = 'flex';
+            progressList.innerHTML = '<li><i class="fas fa-spinner fa-spin"></i> Initializing update...</li>';
+            progressBar.style.width = '0%';
+            closeBtn.disabled = true;
+
+            const eventSource = new EventSource('/api/update/stream');
+
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+
+                if (data.heartbeat) {
+                    return;
+                }
+
+                if (data.step && data.message) {
+                    const icon = data.progress === 100 ? 'fa-check-circle' : 'fa-spinner fa-spin';
+                    const item = document.createElement('li');
+                    item.innerHTML = `<i class="fas ${icon}"></i> ${data.step}: ${data.message}`;
+                    progressList.appendChild(item);
+                    progressBar.style.width = data.progress + '%';
+                }
+
+                if (data.done) {
+                    eventSource.close();
+                    closeBtn.disabled = false;
+                    
+                    if (data.result.success) {
+                        const item = document.createElement('li');
+                        item.innerHTML = '<i class="fas fa-check-circle" style="color: #4ade80;"></i> <strong>Update complete! Please restart the application.</strong>';
+                        progressList.appendChild(item);
+                        progressBar.style.width = '100%';
+                    } else {
+                        const item = document.createElement('li');
+                        item.innerHTML = `<i class="fas fa-times-circle" style="color: #f87171;"></i> <strong>Update failed: ${data.result.error}</strong>`;
+                        progressList.appendChild(item);
+                    }
+                }
+
+                if (data.error) {
+                    eventSource.close();
+                    const item = document.createElement('li');
+                    item.innerHTML = `<i class="fas fa-times-circle" style="color: #f87171;"></i> Error: ${data.error}`;
+                    progressList.appendChild(item);
+                    closeBtn.disabled = false;
+                }
+            };
+
+            eventSource.onerror = function() {
+                eventSource.close();
+                const item = document.createElement('li');
+                item.innerHTML = '<i class="fas fa-times-circle" style="color: #f87171;"></i> Connection error';
+                progressList.appendChild(item);
+                closeBtn.disabled = false;
+            };
+        }
+
+        function closeUpdateModal() {
+            document.getElementById('updateModal').style.display = 'none';
+        }
+
+        // Check for updates on page load
+        window.addEventListener('load', function() {
+            checkForUpdates();
+        });
     </script>
+
+    <!-- Update Modal -->
+    <div id="updateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 30px; max-width: 600px; width: 90%;">
+            <h3 style="margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-download"></i> Updating Popcorn
+            </h3>
+            
+            <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px; margin-bottom: 20px; max-height: 300px; overflow-y: auto;">
+                <ul id="updateProgress" style="list-style: none; padding: 0; margin: 0;">
+                    <li><i class="fas fa-spinner fa-spin"></i> Initializing...</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--bg-tertiary); border-radius: 4px; height: 24px; margin-bottom: 20px; overflow: hidden;">
+                <div id="updateProgressBar" style="background: var(--accent); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+
+            <button onclick="closeUpdateModal()" id="closeUpdateModal" class="btn btn-primary" style="width: 100%;" disabled>
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
 </body>
 </html>
