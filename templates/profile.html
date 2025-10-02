@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit User - Popcorn</title>
+    <title>Profile - Popcorn</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -42,6 +42,12 @@
             margin-bottom: 30px;
         }
 
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
         .header-left {
             display: flex;
             align-items: center;
@@ -63,20 +69,6 @@
         
         .header-menu-toggle:hover {
             color: var(--accent);
-        }
-
-        .header-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-title img {
-            height: 32px;
-            width: 32px;
         }
 
         .nav-menu {
@@ -163,197 +155,177 @@
         }
 
         .container {
-            max-width: 600px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 0 20px;
         }
 
-        .card {
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .alert {
+            background: #1a4d1a;
+            border: 1px solid #2a6d2a;
+            color: #4ade80;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-card {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
+            margin-bottom: 20px;
         }
 
         .card-header {
-            background: var(--bg-tertiary);
+            background: var(--bg-secondary);
             padding: 20px;
             border-bottom: 1px solid var(--border);
         }
 
         .card-header h4 {
+            font-size: 1.2rem;
             margin: 0;
-            font-size: 1.3rem;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .card-body {
-            padding: 30px;
-        }
-
-        .user-info-header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 30px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .user-info-header img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 15px;
-            border: 3px solid var(--border);
-        }
-
-        .user-info-header h5 {
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-            color: var(--text-primary);
-        }
-
-        .user-info-header p {
-            color: var(--text-muted);
-            font-size: 0.95rem;
+            padding: 20px;
         }
 
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--text-primary);
-        }
-
-        .form-check {
-            background: var(--bg-tertiary);
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border);
-        }
-
-        .form-check:last-child {
-            margin-bottom: 0;
-        }
-
-        .form-check-label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1rem;
+            margin-bottom: 8px;
             font-weight: 500;
-            color: var(--text-primary);
-            cursor: pointer;
-        }
-
-        .form-check-input {
-            width: 50px;
-            height: 26px;
-            cursor: pointer;
-            position: relative;
-            appearance: none;
-            background: var(--bg-tertiary);
-            border-radius: 13px;
-            transition: background 0.3s;
-        }
-
-        .form-check-input:checked {
-            background: var(--accent);
-        }
-
-        .form-check-input::before {
-            content: '';
-            position: absolute;
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            top: 2px;
-            left: 2px;
-            background: var(--text-primary);
-            transition: transform 0.3s;
-        }
-
-        .form-check-input:checked::before {
-            transform: translateX(24px);
-        }
-
-        .form-text {
-            display: block;
-            margin-top: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            padding-left: 60px;
-        }
-
-        .alert {
-            padding: 15px 20px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .alert-info {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
             color: var(--text-secondary);
         }
 
-        .alert-warning {
+        .form-group select {
+            width: 100%;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
-            color: var(--accent);
+            color: var(--text-primary);
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
         }
 
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            font-weight: 600;
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .theme-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .theme-option {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
             cursor: pointer;
             transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            width: 100%;
+            display: flex;
+            flex-direction: column;
+            min-height: 140px;
+        }
+
+        .theme-option:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .theme-option.selected {
+            border-color: var(--accent);
+            background: var(--bg-tertiary);
+        }
+
+        .theme-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .theme-description {
+            font-size: 0.85rem;
+            color: var(--text-muted);
             margin-bottom: 12px;
+        }
+
+        .theme-colors {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: auto;
+        }
+
+        .color-swatch {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .btn-primary {
             background: var(--accent);
             color: var(--bg-primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
         }
 
         .btn-primary:hover {
             background: var(--accent-hover);
         }
 
-        .btn-primary:disabled {
-            background: var(--bg-tertiary);
-            color: var(--text-muted);
-            cursor: not-allowed;
-        }
-
         .btn-secondary {
             background: var(--bg-tertiary);
             color: var(--text-primary);
             border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            text-decoration: none;
+            display: inline-block;
         }
 
         .btn-secondary:hover {
             background: var(--bg-tertiary);
+        }
+
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -364,8 +336,8 @@
                 <i class="fas fa-bars"></i>
             </button>
             <div class="header-title">
-                <img src="/static/images/logo.png" alt="Popcorn">
-                Popcorn - Edit User
+                <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
+                Popcorn TV Guide
             </div>
         </div>
     </div>
@@ -382,7 +354,7 @@
                 <i class="fas fa-list"></i>
                 <span>Channels</span>
             </button>
-            <button class="menu-item" onclick="window.location.href='/profile'">
+            <button class="menu-item active" onclick="window.location.href='/profile'">
                 <i class="fas fa-user"></i>
                 <span>Profile</span>
             </button>
@@ -409,79 +381,86 @@
     </div>
 
     <div class="container">
-        <div class="card">
+        <div class="page-header">
+            <h1><i class="fas fa-user-circle"></i> User Profile</h1>
+            <p style="color: var(--text-muted);">Customize your Popcorn experience</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert">
+                    <i class="fas fa-check-circle"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="settings-card">
             <div class="card-header">
-                <h4><i class="fas fa-user-edit"></i> Edit User: {{ user.username }}</h4>
+                <h4><i class="fas fa-palette"></i> Theme Settings</h4>
             </div>
             <div class="card-body">
-                <div class="user-info-header">
-                    <img src="{{ user.avatar_url if user.avatar_url else '/static/images/default-avatar.png' }}" 
-                         alt="{{ user.username }}" 
-                         onerror="this.src='/static/images/default-avatar.png'">
-                    <h5>{{ user.username }}</h5>
-                    {% if user.email %}
-                    <p><i class="fas fa-envelope"></i> {{ user.email }}</p>
-                    {% endif %}
-                </div>
-
-                <form method="POST" action="{{ url_for('user_mgmt.edit_user', user_id=user.id) }}">
+                <form method="POST" id="theme-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="theme" id="theme-input" value="{{ current_user.theme }}">
                     
-                    <div class="form-group">
-                        <label>Permissions</label>
-                        <div class="form-check">
-                            <label class="form-check-label" for="is_admin">
-                                <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin" 
-                                       {% if user.is_admin %}checked{% endif %}>
-                                <span>
-                                    <i class="fas fa-crown" style="color: var(--accent);"></i> <strong>Administrator</strong>
-                                </span>
-                            </label>
-                            <small class="form-text">
-                                Admins can manage users, settings, and all content
-                            </small>
+                    <p style="margin-bottom: 20px; color: var(--text-secondary);">Choose a theme to personalize your viewing experience:</p>
+                    
+                    <div class="theme-preview">
+                        {% for theme_id, theme_data in themes.items() %}
+                        <div class="theme-option {% if current_user.theme == theme_id %}selected{% endif %}" 
+                             onclick="selectTheme('{{ theme_id }}')">
+                            <div class="theme-name">{{ theme_data.name }}</div>
+                            <div class="theme-description">{{ theme_data.description }}</div>
+                            <div class="theme-colors">
+                                <div class="color-swatch" style="background: {{ theme_data.colors['bg-primary'] }}"></div>
+                                <div class="color-swatch" style="background: {{ theme_data.colors['bg-secondary'] }}"></div>
+                                <div class="color-swatch" style="background: {{ theme_data.colors['accent'] }}"></div>
+                                <div class="color-swatch" style="background: {{ theme_data.colors['text-primary'] }}"></div>
+                            </div>
                         </div>
+                        {% endfor %}
                     </div>
 
-                    <div class="form-group">
-                        <label>Account Status</label>
-                        <div class="form-check">
-                            <label class="form-check-label" for="is_active">
-                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
-                                       {% if user.is_active %}checked{% endif %}>
-                                <span>
-                                    <i class="fas fa-check-circle" style="color: var(--accent);"></i> <strong>Active</strong>
-                                </span>
-                            </label>
-                            <small class="form-text">
-                                Inactive users cannot log in
-                            </small>
-                        </div>
+                    <div style="margin-top: 30px; display: flex; gap: 10px;">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-save"></i> Save Theme
+                        </button>
+                        <a href="/guide" class="btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
                     </div>
-
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <div>
-                            <strong>Created:</strong> {{ user.created_at.strftime('%B %d, %Y at %I:%M %p') if user.created_at else 'Unknown' }}
-                            <br>
-                            <strong>Last Login:</strong> {{ user.last_login.strftime('%B %d, %Y at %I:%M %p') if user.last_login else 'Never' }}
-                        </div>
-                    </div>
-
-                    {% if user.id == current_user.id %}
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <div>You cannot modify your own permissions.</div>
-                    </div>
-                    {% endif %}
-
-                    <button type="submit" class="btn btn-primary" {% if user.id == current_user.id %}disabled{% endif %}>
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                    <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> Back to User List
-                    </a>
                 </form>
+
+                <div class="help-text" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                    <i class="fas fa-info-circle"></i> <strong>Custom Themes:</strong> Want to create your own theme? 
+                    You can import custom themes created by the community (coming soon).
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-header">
+                <h4><i class="fas fa-user"></i> Account Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" value="{{ current_user.username }}" disabled 
+                           style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-muted); padding: 10px; border-radius: 4px;">
+                </div>
+                {% if current_user.email %}
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" value="{{ current_user.email }}" disabled 
+                           style="width: 100%; background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-muted); padding: 10px; border-radius: 4px;">
+                </div>
+                {% endif %}
+                <div class="help-text">
+                    <i class="fas fa-lock"></i> Contact an administrator to update your account information.
+                </div>
             </div>
         </div>
     </div>
@@ -493,6 +472,14 @@
             
             menu.classList.toggle('open');
             backdrop.classList.toggle('show');
+        }
+
+        function selectTheme(themeId) {
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            document.getElementById('theme-input').value = themeId;
         }
     </script>
 </body>

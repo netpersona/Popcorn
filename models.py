@@ -17,6 +17,7 @@ class Movie(Base):
     year = Column(Integer)
     rating = Column(String)
     summary = Column(String)
+    poster_url = Column(String)
     
     schedules = relationship('Schedule', back_populates='movie')
     
@@ -60,6 +61,11 @@ class Settings(Base):
     id = Column(Integer, primary_key=True)
     shuffle_frequency = Column(String, default='weekly')
     last_shuffle_date = Column(Date)
+    plex_url = Column(String)
+    plex_token = Column(String)
+    plex_client = Column(String)
+    playback_mode = Column(String, default='web_player')
+    enable_time_offset = Column(Boolean, default=True)
     
     def __repr__(self):
         return f"<Settings(frequency='{self.shuffle_frequency}')>"
@@ -98,6 +104,7 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = Column(DateTime)
     invited_by = Column(Integer, ForeignKey('users.id'))
+    theme = Column(String, default='plex')
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)

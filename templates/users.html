@@ -6,6 +6,19 @@
     <title>User Management - Popcorn</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,29 +26,52 @@
         }
 
         body {
-            background: #121212;
-            color: #e0e0e0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
         }
 
         .header {
-            background: #1a1a1a;
+            background: var(--bg-secondary);
             padding: 15px 20px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 30px;
         }
 
-        .header-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #e5a00d;
+        .header-left {
             display: flex;
             align-items: center;
             gap: 15px;
+        }
+
+        .header-menu-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-menu-toggle:hover {
+            color: var(--accent);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .header-title img {
@@ -43,52 +79,121 @@
             width: 32px;
         }
 
-        .nav-buttons {
+        .nav-menu {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            transition: left 0.3s ease;
+            z-index: 1000;
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            box-shadow: 2px 0 10px var(--shadow);
+            overflow-y: auto;
         }
 
-        .nav-btn, .btn {
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
-            color: #e0e0e0;
+        .nav-menu.open {
+            left: 0;
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-backdrop.show {
+            display: block;
+        }
+
+        .menu-section {
+            padding: 15px 0;
+        }
+
+        .menu-section-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .menu-item {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .menu-item.active {
+            background: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .menu-item.active i {
+            opacity: 1;
+        }
+
+        .menu-spacer {
+            flex: 1;
+        }
+
+        .btn {
             padding: 8px 15px;
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.85rem;
-            transition: background 0.2s;
+            transition: all 0.2s;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .nav-btn:hover, .btn:hover {
-            background: #3a3a3a;
-            color: #e0e0e0;
+            border: none;
         }
 
         .btn-primary {
-            background: #e5a00d;
-            color: #121212;
-            border-color: #e5a00d;
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-weight: 600;
         }
 
         .btn-primary:hover {
-            background: #d89000;
-            color: #121212;
+            background: var(--accent-hover);
+            color: var(--bg-primary);
         }
 
         .btn-warning {
-            background: #f59e0b;
-            color: #121212;
-            border: none;
+            background: var(--accent);
+            color: var(--bg-primary);
         }
 
         .btn-danger {
             background: #dc2626;
-            color: #fff;
-            border: none;
+            color: var(--text-primary);
         }
 
         .btn-sm {
@@ -126,21 +231,21 @@
         }
 
         .alert-success {
-            background: #1a4d1a;
-            border: 1px solid #2a6d2a;
-            color: #4ade80;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--accent);
         }
 
         .alert-danger {
-            background: #4d1a1a;
-            border: 1px solid #6d2a2a;
-            color: #ff6b6b;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
         }
 
         .alert-info {
-            background: #1a3a4d;
-            border: 1px solid #2a4a6d;
-            color: #66d9ef;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
         }
 
         .alert .alert-content {
@@ -162,7 +267,7 @@
         }
 
         .invite-code-box {
-            background: #2a2a2a;
+            background: var(--bg-tertiary);
             padding: 12px;
             border-radius: 4px;
             font-family: 'Courier New', monospace;
@@ -177,28 +282,28 @@
             flex: 1;
             background: none;
             border: none;
-            color: #e0e0e0;
+            color: var(--text-primary);
             font-family: inherit;
             font-size: inherit;
         }
 
         .invite-code-box button {
             padding: 6px 12px;
-            background: #e5a00d;
+            background: var(--accent);
             border: none;
             border-radius: 4px;
-            color: #121212;
+            color: var(--bg-primary);
             cursor: pointer;
             font-size: 0.8rem;
         }
 
         .invite-code-box button:hover {
-            background: #d89000;
+            background: var(--accent-hover);
         }
 
         .card {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 20px;
@@ -210,7 +315,7 @@
         }
 
         thead {
-            background: #202020;
+            background: var(--bg-tertiary);
         }
 
         th {
@@ -218,17 +323,17 @@
             text-align: left;
             font-weight: 600;
             font-size: 0.9rem;
-            color: #999;
-            border-bottom: 1px solid #2a2a2a;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
         }
 
         td {
             padding: 15px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
         }
 
         tr:hover {
-            background: #1e1e1e;
+            background: var(--bg-tertiary);
         }
 
         tr:last-child td {
@@ -250,18 +355,18 @@
         }
 
         .badge-warning {
-            background: #f59e0b;
-            color: #121212;
+            background: var(--accent);
+            color: var(--bg-primary);
         }
 
         .badge-secondary {
-            background: #4b5563;
-            color: #e0e0e0;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
         }
 
         .badge-danger {
             background: #dc2626;
-            color: #fff;
+            color: var(--text-primary);
         }
 
         .modal {
@@ -282,8 +387,8 @@
         }
 
         .modal-dialog {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 8px;
             width: 90%;
             max-width: 500px;
@@ -291,7 +396,7 @@
 
         .modal-header {
             padding: 20px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -311,7 +416,7 @@
 
         .modal-footer {
             padding: 20px;
-            border-top: 1px solid #2a2a2a;
+            border-top: 1px solid var(--border);
             display: flex;
             justify-content: flex-end;
             gap: 10px;
@@ -331,23 +436,23 @@
         .form-control, .form-select {
             width: 100%;
             padding: 10px;
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
-            color: #e0e0e0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
             border-radius: 4px;
             font-size: 0.95rem;
         }
 
         .form-control:focus, .form-select:focus {
             outline: none;
-            border-color: #e5a00d;
+            border-color: var(--accent);
         }
 
         .form-text {
             display: block;
             margin-top: 6px;
             font-size: 0.85rem;
-            color: #999;
+            color: var(--text-muted);
         }
 
         img.avatar {
@@ -360,20 +465,52 @@
 </head>
 <body>
     <div class="header">
-        <div class="header-title">
-            <img src="/static/images/logo.png" alt="Popcorn">
-            Popcorn - User Management
+        <div class="header-left">
+            <button class="header-menu-toggle" onclick="toggleMenu()" title="Menu" aria-label="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="header-title">
+                <img src="/static/images/logo.png" alt="Popcorn">
+                Popcorn - User Management
+            </div>
         </div>
-        <div class="nav-buttons">
-            <a href="/guide" class="nav-btn">
-                <i class="fas fa-th"></i> Guide
-            </a>
-            <a href="/channels" class="nav-btn">
-                <i class="fas fa-list"></i> Channels
-            </a>
-            <a href="/settings" class="nav-btn">
-                <i class="fas fa-cog"></i> Settings
-            </a>
+    </div>
+
+    <div class="menu-backdrop" id="menu-backdrop" onclick="toggleMenu()"></div>
+    
+    <div class="nav-menu" id="nav-menu">
+        <div class="menu-section">
+            <button class="menu-item" onclick="window.location.href='/guide'">
+                <i class="fas fa-th"></i>
+                <span>Guide</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/channels'">
+                <i class="fas fa-list"></i>
+                <span>Channels</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/profile'">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </button>
+        </div>
+        
+        <div class="menu-spacer"></div>
+        
+        <div class="menu-section-separator"></div>
+        <div class="menu-section">
+            {% if current_user.is_admin %}
+            <button class="menu-item" onclick="window.location.href='/settings'">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            {% endif %}
+            <form method="POST" action="/logout" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -433,10 +570,10 @@
                             <div>
                                 <strong>{{ user.username }}</strong>
                                 {% if user.display_name and user.display_name != user.username %}
-                                <br><small style="color: #999;">{{ user.display_name }}</small>
+                                <br><small style="color: var(--text-muted);">{{ user.display_name }}</small>
                                 {% endif %}
                                 {% if user.email %}
-                                <br><small style="color: #999;"><i class="fas fa-envelope"></i> {{ user.email }}</small>
+                                <br><small style="color: var(--text-muted);"><i class="fas fa-envelope"></i> {{ user.email }}</small>
                                 {% endif %}
                             </div>
                         </td>
@@ -457,17 +594,17 @@
                         <td>
                             {% if user.created_at %}
                             {{ user.created_at.strftime('%B %d, %Y') }}<br>
-                            <small style="color: #999;">{{ user.created_at.strftime('%I:%M %p') }}</small>
+                            <small style="color: var(--text-muted);">{{ user.created_at.strftime('%I:%M %p') }}</small>
                             {% else %}
-                            <span style="color: #999;">N/A</span>
+                            <span style="color: var(--text-muted);">N/A</span>
                             {% endif %}
                         </td>
                         <td>
                             {% if user.last_login %}
                             {{ user.last_login.strftime('%B %d, %Y') }}<br>
-                            <small style="color: #999;">{{ user.last_login.strftime('%I:%M %p') }}</small>
+                            <small style="color: var(--text-muted);">{{ user.last_login.strftime('%I:%M %p') }}</small>
                             {% else %}
-                            <span style="color: #999;">Never</span>
+                            <span style="color: var(--text-muted);">Never</span>
                             {% endif %}
                         </td>
                         <td class="text-end">
@@ -506,7 +643,7 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <div class="modal-header">
                     <h5><i class="fas fa-user-plus"></i> Create Invitation</h5>
-                    <button type="button" class="btn-close" onclick="closeInviteModal()" style="font-size: 1.5rem; padding: 0; background: none; border: none; color: #999; cursor: pointer;">&times;</button>
+                    <button type="button" class="btn-close" onclick="closeInviteModal()" style="font-size: 1.5rem; padding: 0; background: none; border: none; color: var(--text-muted); cursor: pointer;">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -537,6 +674,14 @@
     </div>
 
     <script>
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            const backdrop = document.getElementById('menu-backdrop');
+            
+            menu.classList.toggle('open');
+            backdrop.classList.toggle('show');
+        }
+
         function openInviteModal() {
             document.getElementById('inviteModal').classList.add('active');
         }

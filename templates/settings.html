@@ -6,6 +6,19 @@
     <title>Settings - Popcorn</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,16 +26,16 @@
         }
 
         body {
-            background: #121212;
-            color: #e0e0e0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
         }
 
         .header {
-            background: #1a1a1a;
+            background: var(--bg-secondary);
             padding: 15px 20px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -32,36 +45,113 @@
         .header-title {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #e5a00d;
+            color: var(--accent);
         }
 
-        .nav-buttons {
+        .header-left {
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 15px;
         }
 
-        .nav-btn {
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
-            color: #e0e0e0;
-            padding: 8px 15px;
-            border-radius: 4px;
+        .header-menu-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 12px;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 1.3rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-menu-toggle:hover {
+            color: var(--accent);
+        }
+
+        .nav-menu {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px var(--shadow);
+            overflow-y: auto;
+        }
+
+        .nav-menu.open {
+            left: 0;
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-backdrop.show {
+            display: block;
+        }
+
+        .menu-section {
+            padding: 15px 0;
+        }
+
+        .menu-section-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .menu-item {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
             transition: background 0.2s;
-            text-decoration: none;
-            display: inline-block;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            text-align: left;
         }
 
-        .nav-btn:hover {
-            background: #3a3a3a;
-            color: #e0e0e0;
+        .menu-item:hover {
+            background: var(--bg-tertiary);
         }
 
-        .nav-btn.active {
-            background: #e5a00d;
-            color: #121212;
-            border-color: #e5a00d;
+        .menu-item.active {
+            background: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .menu-item.active i {
+            opacity: 1;
+        }
+
+        .menu-spacer {
+            flex: 1;
         }
 
         .container {
@@ -98,17 +188,17 @@
         }
 
         .settings-card {
-            background: #1a1a1a;
-            border: 1px solid #2a2a2a;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 20px;
         }
 
         .card-header {
-            background: #202020;
+            background: var(--bg-secondary);
             padding: 20px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
         }
 
         .card-header h4 {
@@ -137,28 +227,28 @@
         .form-select {
             width: 100%;
             padding: 10px;
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
-            color: #e0e0e0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
             border-radius: 4px;
             font-size: 0.95rem;
         }
 
         .form-select:focus {
             outline: none;
-            border-color: #e5a00d;
+            border-color: var(--accent);
         }
 
         .form-text {
             display: block;
             margin-top: 6px;
             font-size: 0.85rem;
-            color: #999;
+            color: var(--text-secondary);
         }
 
         .form-static {
             padding: 10px 0;
-            color: #ccc;
+            color: var(--text-secondary);
         }
 
         .btn {
@@ -174,24 +264,24 @@
         }
 
         .btn-primary {
-            background: #e5a00d;
-            color: #121212;
+            background: var(--accent);
+            color: var(--bg-primary);
             font-weight: 600;
         }
 
         .btn-primary:hover {
-            background: #cc8f0a;
+            background: var(--accent-hover);
         }
 
         .btn-warning {
-            background: #2a2a2a;
-            color: #e0e0e0;
-            border: 1px solid #3a3a3a;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
             margin-left: 10px;
         }
 
         .btn-warning:hover {
-            background: #3a3a3a;
+            background: var(--bg-tertiary);
         }
 
         .holiday-list {
@@ -201,10 +291,10 @@
         }
 
         .holiday-item {
-            background: #2a2a2a;
+            background: var(--bg-tertiary);
             padding: 15px;
             border-radius: 6px;
-            border-left: 4px solid #e5a00d;
+            border-left: 4px solid var(--accent);
         }
 
         .holiday-item h6 {
@@ -216,14 +306,14 @@
         }
 
         .holiday-item small {
-            color: #999;
+            color: var(--text-secondary);
             font-size: 0.85rem;
         }
 
         .holiday-item p {
             margin: 10px 0 0 0;
             font-size: 0.9rem;
-            color: #ccc;
+            color: var(--text-secondary);
         }
 
         .feature-list {
@@ -244,19 +334,19 @@
 
         .btn-outline {
             background: transparent;
-            border: 1px solid #3a3a3a;
-            color: #e0e0e0;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
             padding: 8px 15px;
             font-size: 0.85rem;
         }
 
         .btn-outline:hover {
-            background: #2a2a2a;
+            background: var(--bg-tertiary);
         }
 
         hr {
             border: none;
-            border-top: 1px solid #2a2a2a;
+            border-top: 1px solid var(--border);
             margin: 20px 0;
         }
 
@@ -269,20 +359,50 @@
 </head>
 <body>
     <div class="header">
-        <div class="header-title">
-            <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
-            Popcorn TV Guide
+        <div class="header-left">
+            <button class="header-menu-toggle" onclick="toggleMenu()" title="Menu" aria-label="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="header-title">
+                <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
+                Popcorn TV Guide
+            </div>
         </div>
-        <div class="nav-buttons">
-            <a href="/guide" class="nav-btn">
-                <i class="fas fa-th"></i> Guide
-            </a>
-            <a href="/channels" class="nav-btn">
-                <i class="fas fa-list"></i> Channels
-            </a>
-            <a href="/settings" class="nav-btn active">
-                <i class="fas fa-cog"></i> Settings
-            </a>
+    </div>
+
+    <div class="menu-backdrop" id="menu-backdrop" onclick="toggleMenu()"></div>
+    
+    <div class="nav-menu" id="nav-menu">
+        <div class="menu-section">
+            <button class="menu-item" onclick="window.location.href='/guide'">
+                <i class="fas fa-th"></i>
+                <span>Guide</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/channels'">
+                <i class="fas fa-list"></i>
+                <span>Channels</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/profile'">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </button>
+        </div>
+        
+        <div class="menu-spacer"></div>
+        
+        <div class="menu-section-separator"></div>
+        <div class="menu-section">
+            <button class="menu-item active" onclick="window.location.href='/settings'">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            <form method="POST" action="/logout" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -298,14 +418,101 @@
         </div>
         {% endif %}
 
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'success' %}
+                    <div class="alert">
+                        <i class="fas fa-check-circle"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% elif category == 'error' %}
+                    <div class="alert" style="background: #4d1a1a; border: 1px solid #6d2a2a; color: #f87171;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         <div class="settings-layout">
             <div class="main-settings">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-server"></i> Plex Connection</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="plexConfigForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            
+                            <div class="form-group">
+                                <label for="plex_url" class="form-label">
+                                    Plex Server URL
+                                    <span style="color: #e74c3c;">*</span>
+                                </label>
+                                <input type="text" name="plex_url" id="plex_url" 
+                                       class="form-select" 
+                                       placeholder="http://192.168.1.100:32400"
+                                       value="{{ settings.plex_url or '' }}">
+                                <span class="form-text">
+                                    Your Plex server address (e.g., http://192.168.1.100:32400)
+                                </span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="plex_token" class="form-label">
+                                    Plex Token
+                                    <span style="color: #e74c3c;">*</span>
+                                </label>
+                                <input type="password" name="plex_token" id="plex_token" 
+                                       class="form-select" 
+                                       placeholder="Enter your Plex authentication token"
+                                       value="{{ settings.plex_token or '' }}">
+                                <span class="form-text">
+                                    Your Plex authentication token - <a href="https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/" target="_blank" style="color: var(--accent);">How to find your token</a>
+                                </span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="plex_client" class="form-label">
+                                    Default Plex Client
+                                </label>
+                                <input type="text" name="plex_client" id="plex_client" 
+                                       class="form-select" 
+                                       placeholder="Living Room Roku (optional)"
+                                       value="{{ settings.plex_client or '' }}">
+                                <span class="form-text">
+                                    Optional: Default client name for direct playback
+                                </span>
+                            </div>
+
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button type="submit" id="saveConfigBtn" class="btn btn-primary" style="flex: 1;">
+                                    <i class="fas fa-save"></i> Save & Sync Movies
+                                </button>
+                                <button type="button" id="testConnectionBtn" class="btn btn-warning" style="flex: 1;">
+                                    <i class="fas fa-plug"></i> Test Connection
+                                </button>
+                            </div>
+
+                            <div style="margin-top: 10px;">
+                                <small style="color: var(--text-secondary); display: block; text-align: center;">
+                                    <i class="fas fa-info-circle"></i> Saving will connect to Plex and sync your movie library
+                                </small>
+                            </div>
+
+                            <div id="testResult" style="margin-top: 15px; display: none;"></div>
+                        </form>
+                    </div>
+                </div>
+
                 <div class="settings-card">
                     <div class="card-header">
                         <h4><i class="fas fa-users"></i> User Management</h4>
                     </div>
                     <div class="card-body">
-                        <p style="color: #999; margin-bottom: 20px;">
+                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
                             Manage user access, create invitations, and configure permissions for your Popcorn instance.
                         </p>
                         <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-primary" style="width: 100%; display: inline-block; text-align: center; padding: 12px;">
@@ -359,6 +566,53 @@
 
                 <div class="settings-card">
                     <div class="card-header">
+                        <h4><i class="fas fa-play-circle"></i> Playback Settings</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            
+                            <div class="form-group">
+                                <label for="playback_mode" class="form-label">Playback Mode</label>
+                                <select name="playback_mode" id="playback_mode" class="form-select">
+                                    <option value="web_player" {% if settings.playback_mode == 'web_player' %}selected{% endif %}>
+                                        Web Player - Opens in browser
+                                    </option>
+                                    <option value="client" {% if settings.playback_mode == 'client' %}selected{% endif %}>
+                                        Client Playback - Sends to Plex device
+                                    </option>
+                                </select>
+                                <span class="form-text">
+                                    <i class="fas fa-info-circle"></i> Web Player opens movies in your browser with autoplay. Client Playback sends to a configured Plex device (TV, Roku, etc.).
+                                </span>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" style="display: flex; align-items: center; gap: 10px;">
+                                    <input type="checkbox" name="enable_time_offset" id="enable_time_offset" 
+                                           {% if settings.enable_time_offset %}checked{% endif %}
+                                           style="width: auto; height: 18px; cursor: pointer;">
+                                    <span>Enable Time Offset (Live TV Mode)</span>
+                                </label>
+                                <span class="form-text">
+                                    <i class="fas fa-info-circle"></i> When enabled, movies start at their current scheduled position, like tuning into a live broadcast. When disabled, movies always start from the beginning.
+                                </span>
+                                <div style="background: var(--bg-tertiary); padding: 12px; margin-top: 10px; border-radius: 4px; border-left: 3px solid var(--accent);">
+                                    <small style="color: var(--text-secondary);">
+                                        <strong>Example:</strong> If a movie is scheduled for 7:00 PM - 9:00 PM and you click it at 8:30 PM, it will start playing 1.5 hours into the movie (like joining a live TV broadcast already in progress).
+                                    </small>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Playback Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
                         <h4><i class="fas fa-calendar-star"></i> Holiday Channels</h4>
                     </div>
                     <div class="card-body">
@@ -390,7 +644,7 @@
                     </div>
                     <div class="card-body">
                         <h6>Popcorn</h6>
-                        <p style="color: #999; font-size: 0.9rem;">Cable-style movie scheduler for Plex</p>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Cable-style movie scheduler for Plex</p>
                         
                         <hr>
                         
@@ -412,5 +666,84 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            const backdrop = document.getElementById('menu-backdrop');
+            
+            menu.classList.toggle('open');
+            backdrop.classList.toggle('show');
+        }
+
+        document.getElementById('plexConfigForm').addEventListener('submit', function() {
+            const saveBtn = document.getElementById('saveConfigBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting & Syncing...';
+        });
+
+        document.getElementById('testConnectionBtn').addEventListener('click', async function() {
+            const btn = this;
+            const resultDiv = document.getElementById('testResult');
+            const plexUrl = document.getElementById('plex_url').value;
+            const plexToken = document.getElementById('plex_token').value;
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+            if (!plexUrl || !plexToken) {
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#4d1a1a';
+                resultDiv.style.border = '1px solid #6d2a2a';
+                resultDiv.style.color = '#f87171';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please enter both Plex URL and Token';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+
+            try {
+                const formData = new FormData();
+                formData.append('plex_url', plexUrl);
+                formData.append('plex_token', plexToken);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('/settings/test-plex', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                resultDiv.style.display = 'block';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+
+                if (data.success) {
+                    resultDiv.style.background = '#1a4d1a';
+                    resultDiv.style.border = '1px solid #2a6d2a';
+                    resultDiv.style.color = '#4ade80';
+                    resultDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+                } else {
+                    resultDiv.style.background = '#4d1a1a';
+                    resultDiv.style.border = '1px solid #6d2a2a';
+                    resultDiv.style.color = '#f87171';
+                    resultDiv.innerHTML = '<i class="fas fa-times-circle"></i> ' + data.message;
+                }
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#4d1a1a';
+                resultDiv.style.border = '1px solid #6d2a2a';
+                resultDiv.style.color = '#f87171';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error: ' + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+            }
+        });
+    </script>
 </body>
 </html>

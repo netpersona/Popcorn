@@ -27,10 +27,18 @@ def generate_invite_code():
 @admin_required
 def list_users():
     """Display list of all users"""
+    import json
+    
+    with open('themes.json', 'r') as f:
+        themes = json.load(f)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes['plex'])['colors']
+    
     db = get_session()
     try:
         users = db.query(User).order_by(User.created_at.desc()).all()
-        return render_template('users.html', users=users)
+        return render_template('users.html', users=users, theme_colors=theme_colors)
     finally:
         db.close()
 
@@ -73,6 +81,14 @@ def create_invite():
 @admin_required
 def edit_user(user_id):
     """Edit user permissions"""
+    import json
+    
+    with open('themes.json', 'r') as f:
+        themes = json.load(f)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes['plex'])['colors']
+    
     db = get_session()
     try:
         user = db.query(User).filter_by(id=user_id).first()
@@ -93,7 +109,7 @@ def edit_user(user_id):
             flash(f'User {user.username} updated successfully.', 'success')
             return redirect(url_for('user_mgmt.list_users'))
         
-        return render_template('edit_user.html', user=user)
+        return render_template('edit_user.html', user=user, theme_colors=theme_colors)
     finally:
         db.close()
 

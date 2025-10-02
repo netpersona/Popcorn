@@ -87,7 +87,8 @@ def initialize_app():
     logger.info("Database initialized")
     
     try:
-        plex_api = PlexAPI()
+        settings_obj = db_session.query(Settings).first()
+        plex_api = PlexAPI(db_settings=settings_obj)
         logger.info("Plex API connected")
     except Exception as e:
         logger.warning(f"Plex API not available: {e}")
@@ -113,6 +114,7 @@ def sync_movies():
     existing_combinations = {(m.plex_id, m.genre) for m in session.query(Movie).all()}
     
     new_count = 0
+    update_count = 0
     for data in movie_data:
         if data['duration'] <= 0:
             logger.warning(f"Skipping movie '{data['title']}' with invalid duration: {data['duration']}")
@@ -127,10 +129,16 @@ def sync_movies():
                     plex_id=data['plex_id'],
                     year=data['year'],
                     rating=data['rating'],
-                    summary=data['summary']
+                    summary=data['summary'],
+                    poster_url=data.get('poster_url')
                 )
                 session.add(movie)
                 new_count += 1
+            else:
+                existing_movie = session.query(Movie).filter_by(plex_id=data['plex_id'], genre=genre).first()
+                if existing_movie and existing_movie.poster_url != data.get('poster_url'):
+                    existing_movie.poster_url = data.get('poster_url')
+                    update_count += 1
     
     session.commit()
     logger.info(f"Added {new_count} new movie entries to database")
@@ -305,6 +313,29 @@ def logout():
     flash('You have been logged out', 'info')
     return redirect(url_for('login'))
 
+@app.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    import json
+    
+    with open('themes.json', 'r') as f:
+        themes = json.load(f)
+    
+    if request.method == 'POST':
+        theme = request.form.get('theme')
+        if theme and theme in themes:
+            db_session = get_session()
+            user = db_session.query(User).get(current_user.id)
+            user.theme = theme
+            db_session.commit()
+            flash(f'Theme changed to {themes[theme]["name"]}!', 'success')
+            return redirect(url_for('profile'))
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes['plex'])['colors']
+    
+    return render_template('profile.html', themes=themes, theme_colors=theme_colors)
+
 @app.route('/')
 @login_required
 def index():
@@ -313,6 +344,8 @@ def index():
 @app.route('/guide')
 @login_required
 def guide():
+    import json
+    
     if not scheduler:
         return render_template('error.html', message="Application not initialized")
     
@@ -343,13 +376,27 @@ def guide():
     
     current_minutes = get_current_minutes()
     
+    session = get_session()
+    settings_obj = session.query(Settings).first()
+    enable_time_offset = settings_obj.enable_time_offset if settings_obj else True
+    
+    with open('themes.json', 'r') as f:
+        themes = json.load(f)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes['plex'])['colors']
+    
     return render_template('guide.html', 
                          channels=guide_data, 
-                         current_minutes=current_minutes)
+                         current_minutes=current_minutes,
+                         enable_time_offset=enable_time_offset,
+                         theme_colors=theme_colors)
 
 @app.route('/channels')
 @login_required
 def channels_list():
+    import json
+    
     if not scheduler:
         return render_template('error.html', message="Application not initialized")
     
@@ -363,7 +410,13 @@ def channels_list():
             'current': current.movie if current else None
         })
     
-    return render_template('index.html', channels=channel_info)
+    with open('themes.json', 'r') as f:
+        themes = json.load(f)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes['plex'])['colors']
+    
+    return render_template('index.html', channels=channel_info, theme_colors=theme_colors)
 
 @app.route('/channel/<channel_name>')
 @login_required
@@ -385,15 +438,25 @@ def play(movie_id):
     if not plex_api:
         return jsonify({'success': False, 'message': 'Plex API not available'})
     
-    from models import Movie
+    from models import Movie, Settings
     session = get_session()
     movie = session.query(Movie).filter_by(id=movie_id).first()
     
     if not movie:
         return jsonify({'success': False, 'message': 'Movie not found'})
     
-    success, message = plex_api.play_movie(movie.plex_id)
-    return jsonify({'success': success, 'message': message})
+    settings_obj = session.query(Settings).first()
+    playback_mode = settings_obj.playback_mode if settings_obj else 'web_player'
+    
+    offset_ms = request.json.get('offset_ms', 0) if request.is_json else 0
+    
+    success, result, offset_min = plex_api.play_movie(movie.plex_id, offset_ms=offset_ms, playback_mode=playback_mode)
+    
+    if success and playback_mode == 'web_player':
+        message = f"Opening movie in browser" + (f" (starting at {offset_min} min)" if offset_min > 0 else "")
+        return jsonify({'success': True, 'message': message, 'web_url': result, 'offset_min': offset_min})
+    else:
+        return jsonify({'success': success, 'message': result, 'offset_min': offset_min if success else 0})
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -411,19 +474,87 @@ def settings():
         session.commit()
     
     if request.method == 'POST':
-        frequency = request.form.get('shuffle_frequency')
-        if frequency in ['daily', 'weekly', 'monthly']:
-            settings_obj.shuffle_frequency = frequency
+        if 'plex_url' in request.form:
+            global plex_api
+            
+            settings_obj.plex_url = request.form.get('plex_url', '').strip() or None
+            settings_obj.plex_token = request.form.get('plex_token', '').strip() or None
+            settings_obj.plex_client = request.form.get('plex_client', '').strip() or None
             session.commit()
             
-            if request.form.get('reshuffle_now'):
-                scheduler.generate_all_schedules(force=True)
-                return redirect(url_for('settings', reshuffled=1))
-        
-        return redirect(url_for('settings'))
+            try:
+                plex_api = PlexAPI(db_settings=settings_obj)
+                logger.info("Plex API reconnected with new settings")
+                
+                sync_movies()
+                
+                movie_count = session.query(Movie).count()
+                flash(f'Plex connected successfully! Synced {movie_count} movies.', 'success')
+                return redirect(url_for('settings', plex_saved=1))
+            except Exception as e:
+                logger.error(f"Failed to connect to Plex with new settings: {e}")
+                plex_api = None
+                flash(f'Settings saved, but connection failed: {str(e)}', 'error')
+                return redirect(url_for('settings', plex_error=1))
+        elif 'playback_mode' in request.form:
+            playback_mode = request.form.get('playback_mode')
+            if playback_mode in ['web_player', 'client']:
+                settings_obj.playback_mode = playback_mode
+            
+            settings_obj.enable_time_offset = 'enable_time_offset' in request.form
+            session.commit()
+            
+            flash('Playback settings saved successfully!', 'success')
+            return redirect(url_for('settings'))
+        else:
+            frequency = request.form.get('shuffle_frequency')
+            if frequency in ['daily', 'weekly', 'monthly']:
+                settings_obj.shuffle_frequency = frequency
+                session.commit()
+                
+                if request.form.get('reshuffle_now'):
+                    scheduler.generate_all_schedules(force=True)
+                    return redirect(url_for('settings', reshuffled=1))
+            
+            return redirect(url_for('settings'))
     
     reshuffled = request.args.get('reshuffled')
-    return render_template('settings.html', settings=settings_obj, reshuffled=reshuffled)
+    plex_saved = request.args.get('plex_saved')
+    
+    import json
+    with open('themes.json', 'r') as f:
+        themes = json.load(f)
+    
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes['plex'])['colors']
+    
+    return render_template('settings.html', settings=settings_obj, reshuffled=reshuffled, plex_saved=plex_saved, theme_colors=theme_colors)
+
+@app.route('/settings/test-plex', methods=['POST'])
+@login_required
+def test_plex_connection():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Admin access required'}), 403
+    
+    plex_url = request.form.get('plex_url', '').strip()
+    plex_token = request.form.get('plex_token', '').strip()
+    
+    if not plex_url or not plex_token:
+        return jsonify({'success': False, 'message': 'Plex URL and Token are required'})
+    
+    try:
+        from plex_api import PlexServer
+        test_plex = PlexServer(plex_url, plex_token)
+        server_name = test_plex.friendlyName
+        return jsonify({
+            'success': True,
+            'message': f'Successfully connected to: {server_name}'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Connection failed: {str(e)}'
+        })
 
 @app.route('/api/clients')
 @login_required

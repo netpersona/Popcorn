@@ -7,13 +7,18 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class PlexAPI:
-    def __init__(self):
-        self.base_url = os.getenv('PLEX_URL')
-        self.token = os.getenv('PLEX_TOKEN')
-        self.client_name = os.getenv('PLEX_CLIENT')
+    def __init__(self, db_settings=None):
+        if db_settings and db_settings.plex_url and db_settings.plex_token:
+            self.base_url = db_settings.plex_url
+            self.token = db_settings.plex_token
+            self.client_name = db_settings.plex_client
+        else:
+            self.base_url = os.getenv('PLEX_URL')
+            self.token = os.getenv('PLEX_TOKEN')
+            self.client_name = os.getenv('PLEX_CLIENT')
         
         if not self.base_url or not self.token:
-            raise ValueError("PLEX_URL and PLEX_TOKEN must be set in environment variables")
+            raise ValueError("Plex URL and Token must be configured in Settings or environment variables")
         
         try:
             self.plex = PlexServer(self.base_url, self.token)
@@ -41,6 +46,10 @@ class PlexAPI:
             for movie in movies:
                 genres = [g.tag for g in movie.genres] if movie.genres else ['Unknown']
                 
+                poster_url = None
+                if hasattr(movie, 'thumb') and movie.thumb:
+                    poster_url = f"{self.base_url}{movie.thumb}?X-Plex-Token={self.token}"
+                
                 movie_info = {
                     'title': movie.title,
                     'plex_id': str(movie.ratingKey),
@@ -48,7 +57,8 @@ class PlexAPI:
                     'genres': genres,
                     'year': movie.year if hasattr(movie, 'year') else None,
                     'rating': movie.contentRating if hasattr(movie, 'contentRating') else None,
-                    'summary': movie.summary if hasattr(movie, 'summary') else ''
+                    'summary': movie.summary if hasattr(movie, 'summary') else '',
+                    'poster_url': poster_url
                 }
                 movie_data.append(movie_info)
             
@@ -59,31 +69,74 @@ class PlexAPI:
             logger.error(f"Error fetching movies: {e}")
             return []
     
-    def play_movie(self, plex_id):
+    def play_movie(self, plex_id, offset_ms=0, playback_mode='web_player'):
         try:
-            if not self.client_name:
-                logger.error("PLEX_CLIENT not set in environment variables")
-                return False, "Plex client not configured"
-            
-            try:
-                client = self.plex.client(self.client_name)
-            except NotFound:
-                available_clients = [c.title for c in self.plex.clients()]
-                logger.error(f"Client '{self.client_name}' not found. Available: {available_clients}")
-                return False, f"Client not found. Available clients: {', '.join(available_clients)}"
-            
             movie = self.plex.fetchItem(int(plex_id))
-            client.playMedia(movie)
+            logger.info(f"Found movie: {movie.title}")
             
-            logger.info(f"Playing '{movie.title}' on {client.title}")
-            return True, f"Now playing: {movie.title}"
+            if playback_mode == 'web_player':
+                server_id = self.plex.machineIdentifier
+                web_url = f"https://app.plex.tv/desktop/#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}&autoplay=1&automute=0"
+                
+                if offset_ms > 0:
+                    web_url += f"&t={offset_ms}"
+                    offset_min = offset_ms // 60000
+                    logger.info(f"Generated web player URL for '{movie.title}' with {offset_min} min offset")
+                    return True, web_url, offset_min
+                else:
+                    logger.info(f"Generated web player URL for '{movie.title}'")
+                    return True, web_url, 0
+            
+            else:
+                if not self.client_name:
+                    logger.error("PLEX_CLIENT not set - cannot play movie")
+                    return False, "Plex client not configured. Please set a default client in Settings.", 0
+                
+                try:
+                    client = self.plex.client(self.client_name)
+                    logger.info(f"Found Plex client: {client.title}")
+                except NotFound:
+                    try:
+                        available_clients = [c.title for c in self.plex.clients()]
+                        logger.error(f"Client '{self.client_name}' not found. Available: {available_clients}")
+                        if available_clients:
+                            return False, f"Client '{self.client_name}' not found. Available: {', '.join(available_clients)}. Update in Settings.", 0
+                        else:
+                            return False, "No Plex clients found. Make sure a Plex player is running and connected to your server.", 0
+                    except Exception as e:
+                        logger.error(f"Failed to list clients: {e}")
+                        return False, f"Cannot connect to Plex server. Check your network and Plex settings.", 0
+                
+                try:
+                    client.playMedia(movie)
+                    logger.info(f"Sent playMedia command to {client.title}")
+                except Exception as e:
+                    logger.error(f"Failed to start playback: {e}")
+                    return False, f"Playback failed: {str(e)}. Make sure your Plex client is responding.", 0
+                
+                if offset_ms > 0:
+                    import time
+                    time.sleep(1)
+                    try:
+                        client.seekTo(int(offset_ms))
+                        logger.info(f"Sought to {offset_ms}ms ({offset_ms // 60000} min) in '{movie.title}'")
+                    except Exception as e:
+                        logger.warning(f"Failed to seek to {offset_ms}ms: {e}")
+                        logger.info(f"Movie is playing from beginning instead")
+                
+                offset_min = offset_ms // 60000
+                logger.info(f"Successfully playing '{movie.title}' on {client.title}")
+                if offset_min > 0:
+                    return True, f"Now playing: {movie.title} (starting at {offset_min} min)", offset_min
+                else:
+                    return True, f"Now playing: {movie.title}", 0
             
         except NotFound:
-            logger.error(f"Movie with plex_id {plex_id} not found")
-            return False, "Movie not found in Plex library"
+            logger.error(f"Movie with plex_id {plex_id} not found in Plex library")
+            return False, "Movie not found in Plex library. Try syncing your library in Settings.", 0
         except Exception as e:
-            logger.error(f"Error playing movie: {e}")
-            return False, str(e)
+            logger.error(f"Unexpected error playing movie: {e}", exc_info=True)
+            return False, f"Error: {str(e)}", 0
     
     def get_available_clients(self):
         try:

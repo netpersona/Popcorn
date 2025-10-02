@@ -6,6 +6,19 @@
     <title>Popcorn - TV Guide</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -13,30 +26,53 @@
         }
 
         body {
-            background: #121212;
-            color: #e0e0e0;
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
         }
 
         .header {
-            background: #1a1a1a;
+            background: var(--bg-secondary);
             padding: 15px 20px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
         .header-title {
             font-size: 1.5rem;
             font-weight: bold;
-            color: #e5a00d;
+            color: var(--accent);
         }
 
         .header-time {
             font-size: 0.9rem;
-            color: #999;
+            color: var(--text-muted);
+        }
+        
+        .header-menu-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-menu-toggle:hover {
+            color: var(--accent);
         }
 
         .guide-container {
@@ -48,7 +84,7 @@
 
         .channel-item {
             padding: 20px 15px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
             height: 120px;
             display: flex;
             align-items: center;
@@ -67,8 +103,8 @@
         .time-header {
             position: sticky;
             top: 0;
-            background: #1a1a1a;
-            border-bottom: 1px solid #2a2a2a;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
             z-index: 10;
             display: grid;
             grid-template-columns: repeat(48, 120px);
@@ -76,10 +112,10 @@
         }
 
         .time-slot {
-            border-right: 1px solid #2a2a2a;
+            border-right: 1px solid var(--border);
             padding: 10px;
             font-size: 0.85rem;
-            color: #999;
+            color: var(--text-secondary);
             text-align: center;
         }
 
@@ -90,28 +126,57 @@
         .channel-row {
             display: grid;
             grid-template-columns: repeat(48, 120px);
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid var(--border);
             height: 120px;
             position: relative;
         }
 
         .program-tile {
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
             border-radius: 4px;
-            padding: 8px;
             overflow: hidden;
             cursor: pointer;
             transition: all 0.2s;
             position: absolute;
             height: 110px;
             top: 5px;
+            display: flex;
+            align-items: center;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
 
         .program-tile:hover {
-            background: #3a3a3a;
             transform: scale(1.02);
             z-index: 5;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .program-poster {
+            width: 60px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 2px;
+            margin: 10px;
+            flex-shrink: 0;
+            background: var(--bg-secondary);
+        }
+
+        .program-content {
+            flex: 1;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            min-width: 0;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .program-tile:hover .program-content {
+            background: var(--bg-secondary);
         }
 
         .program-title {
@@ -121,24 +186,25 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: var(--text-primary);
         }
 
         .program-time {
             font-size: 0.75rem;
-            color: #999;
+            color: var(--text-secondary);
             margin-bottom: 4px;
         }
 
         .program-info {
             font-size: 0.7rem;
-            color: #666;
+            color: var(--text-muted);
         }
 
         .current-time-indicator {
             position: absolute;
             top: 40px;
             width: 2px;
-            background: #e5a00d;
+            background: var(--accent);
             z-index: 15;
             pointer-events: none;
             bottom: 0;
@@ -150,7 +216,7 @@
             left: -6px;
             width: 14px;
             height: 14px;
-            background: #e5a00d;
+            background: var(--accent);
             border-radius: 50%;
         }
 
@@ -160,16 +226,16 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: #1a1a1a;
+            background: var(--bg-secondary);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #3a3a3a;
+            background: var(--bg-tertiary);
             border-radius: 6px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #4a4a4a;
+            background: var(--bg-tertiary);
         }
 
         .nav-buttons {
@@ -178,9 +244,9 @@
         }
 
         .nav-btn {
-            background: #2a2a2a;
-            border: 1px solid #3a3a3a;
-            color: #e0e0e0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
             padding: 8px 15px;
             border-radius: 4px;
             cursor: pointer;
@@ -189,13 +255,13 @@
         }
 
         .nav-btn:hover {
-            background: #3a3a3a;
+            background: var(--bg-tertiary);
         }
 
         .nav-btn.active {
-            background: #e5a00d;
-            color: #121212;
-            border-color: #e5a00d;
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
         }
 
         .user-profile {
@@ -203,8 +269,8 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: #1a1a1a;
-            border-top: 1px solid #2a2a2a;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
             padding: 15px;
             display: flex;
             align-items: center;
@@ -218,7 +284,7 @@
             height: 40px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid #3a3a3a;
+            border: 2px solid var(--border);
             flex-shrink: 0;
         }
 
@@ -230,68 +296,183 @@
         .user-name {
             font-size: 0.9rem;
             font-weight: 500;
-            color: #e0e0e0;
+            color: var(--text-primary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .logout-btn {
-            background: none;
-            border: none;
-            color: #999;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 4px;
-            transition: all 0.2s;
-            font-size: 1rem;
-        }
-
-        .logout-btn:hover {
-            background: #2a2a2a;
-            color: #e5a00d;
-        }
-
         .channel-rail {
             width: 180px;
-            background: #1a1a1a;
-            border-right: 1px solid #2a2a2a;
-            overflow-y: auto;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            overflow-y: visible;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
+            padding-bottom: 20px;
         }
 
         .channel-list {
-            flex: 1;
+            flex: 1 1 auto;
             overflow-y: auto;
+            min-height: 0;
+        }
+
+        .nav-menu {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px var(--shadow);
+            overflow-y: auto;
+        }
+
+        .nav-menu.open {
+            left: 0;
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-backdrop.show {
+            display: block;
+        }
+
+        .menu-section {
+            padding: 15px 0;
+        }
+
+        .menu-section-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .menu-item {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .menu-item.active {
+            background: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .menu-item.active i {
+            opacity: 1;
+        }
+
+        .menu-spacer {
+            flex: 1;
+        }
+        
+        .program-tile.future {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .program-tile.future:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .program-tile.current {
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div>
-            <div class="header-title">
-                <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
-                Popcorn TV Guide
+        <div class="header-left">
+            <button class="header-menu-toggle" onclick="toggleMenu()" title="Menu" aria-label="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div>
+                <div class="header-title">
+                    <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
+                    Popcorn TV Guide
+                </div>
+                <div class="header-time" id="current-time">TODAY</div>
             </div>
-            <div class="header-time" id="current-time">TODAY</div>
         </div>
-        <div class="nav-buttons">
-            <button class="nav-btn active" onclick="window.location.href='/guide'">
-                <i class="fas fa-th"></i> Guide
+    </div>
+
+    <div class="menu-backdrop" id="menu-backdrop" onclick="toggleMenu()"></div>
+    
+    <div class="nav-menu" id="nav-menu">
+        <div class="menu-section">
+            <button class="menu-item active" onclick="window.location.href='/guide'">
+                <i class="fas fa-th"></i>
+                <span>Guide</span>
             </button>
-            <button class="nav-btn" onclick="window.location.href='/channels'">
-                <i class="fas fa-list"></i> Channels
+            <button class="menu-item" onclick="window.location.href='/channels'">
+                <i class="fas fa-list"></i>
+                <span>Channels</span>
             </button>
+            <button class="menu-item" onclick="window.location.href='/profile'">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </button>
+            <button class="menu-item" onclick="jumpToNow(); toggleMenu();">
+                <i class="fas fa-clock"></i>
+                <span>Jump to Now</span>
+            </button>
+        </div>
+        
+        <div class="menu-spacer"></div>
+        
+        <div class="menu-section-separator"></div>
+        <div class="menu-section">
             {% if current_user.is_admin %}
-            <button class="nav-btn" onclick="window.location.href='/settings'">
-                <i class="fas fa-cog"></i> Settings
+            <button class="menu-item" onclick="window.location.href='/settings'">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
             </button>
             {% endif %}
-            <button class="nav-btn" onclick="jumpToNow()">
-                <i class="fas fa-clock"></i> Jump to Now
-            </button>
+            <form method="POST" action="/logout" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -313,12 +494,6 @@
                 <div class="user-info">
                     <div class="user-name">{{ current_user.username }}</div>
                 </div>
-                <form method="POST" action="/logout" style="margin: 0;">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <button type="submit" class="logout-btn" title="Logout" aria-label="Logout">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                </form>
             </div>
         </div>
 
@@ -341,12 +516,21 @@
                     {% for program in channel.programs %}
                     <div class="program-tile" 
                          style="left: {{ (program.start_minute / 30) * 120 }}px; width: {{ (program.duration_minutes / 30) * 120 }}px;"
-                         onclick="playProgram({{ program.movie.id }})">
-                        <div class="program-title">{{ program.movie.title }}</div>
-                        <div class="program-time">{{ program.start_time }} - {{ program.end_time }}</div>
-                        <div class="program-info">
-                            {% if program.movie.year %}{{ program.movie.year }} • {% endif %}
-                            {{ program.duration_minutes }} min
+                         onclick="playProgram({{ program.movie.id }}, {{ program.start_minute }}, {{ program.duration_minutes }}, {{ program.movie.duration }})"
+                         data-movie-id="{{ program.movie.id }}"
+                         data-start-minute="{{ program.start_minute }}"
+                         data-duration-minutes="{{ program.duration_minutes }}"
+                         data-movie-duration="{{ program.movie.duration }}">
+                        {% if program.movie.poster_url %}
+                        <img src="{{ program.movie.poster_url }}" class="program-poster" alt="{{ program.movie.title }}" loading="lazy">
+                        {% endif %}
+                        <div class="program-content">
+                            <div class="program-title">{{ program.movie.title }}</div>
+                            <div class="program-time">{{ program.start_time }} - {{ program.end_time }}</div>
+                            <div class="program-info">
+                                {% if program.movie.year %}{{ program.movie.year }} • {% endif %}
+                                {{ program.duration_minutes }} min
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
@@ -357,6 +541,14 @@
     </div>
 
     <script>
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            const backdrop = document.getElementById('menu-backdrop');
+            
+            menu.classList.toggle('open');
+            backdrop.classList.toggle('show');
+        }
+
         function updateTime() {
             const now = new Date();
             const hours = now.getHours();
@@ -387,19 +579,101 @@
             });
         }
 
-        function playProgram(movieId) {
-            window.open(`/deeplink/${movieId}`, '_blank', 'noopener,noreferrer');
+        const ENABLE_TIME_OFFSET = {{ 'true' if enable_time_offset else 'false' }};
+        
+        async function playProgram(movieId, startMinute, durationMinutes, movieDuration) {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            let offsetMs = 0;
+            
+            if (ENABLE_TIME_OFFSET) {
+                const minutesIntoProgram = currentMinutes - startMinute;
+                if (minutesIntoProgram > 0 && minutesIntoProgram < durationMinutes) {
+                    const progressPercent = minutesIntoProgram / durationMinutes;
+                    offsetMs = Math.floor(progressPercent * movieDuration * 60 * 1000);
+                }
+            }
+            
+            console.log(`Playing movie ${movieId} with offset ${offsetMs}ms (${Math.floor(offsetMs/60000)} minutes) - Time Offset: ${ENABLE_TIME_OFFSET ? 'ON' : 'OFF'}`);
+            
+            const newWindow = window.open('', '_blank');
+            
+            if (!newWindow) {
+                alert('⚠️ Popup blocked! Please allow popups for this site to use Web Player mode.\n\nAlternatively, switch to Client Playback mode in Settings.');
+                return;
+            }
+            
+            try {
+                const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+                const response = await fetch(`/play/${movieId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ offset_ms: offsetMs })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.web_url) {
+                        newWindow.location.href = data.web_url;
+                    } else {
+                        newWindow.close();
+                        alert(`✅ ${data.message}`);
+                    }
+                } else {
+                    newWindow.close();
+                    alert(`❌ Error: ${data.message}`);
+                }
+            } catch (error) {
+                if (newWindow) newWindow.close();
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+
+        function updateProgramStates() {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            document.querySelectorAll('.program-tile').forEach(tile => {
+                const startMin = parseInt(tile.dataset.startMinute);
+                const durationMin = parseInt(tile.dataset.durationMinutes);
+                const endMin = (startMin + durationMin) % 1440;
+                
+                tile.classList.remove('current', 'future');
+                
+                let isCurrent = false;
+                
+                if (endMin > startMin) {
+                    isCurrent = currentMinutes >= startMin && currentMinutes < endMin;
+                } else {
+                    isCurrent = currentMinutes >= startMin || currentMinutes < endMin;
+                }
+                
+                if (isCurrent) {
+                    tile.classList.add('current');
+                } else {
+                    tile.classList.add('future');
+                }
+            });
         }
 
         const guideContent = document.getElementById('guide-content');
-        const channelRail = document.getElementById('channel-rail');
+        const channelList = document.querySelector('.channel-list');
         
         guideContent.addEventListener('scroll', function() {
-            channelRail.scrollTop = guideContent.scrollTop;
+            if (channelList) {
+                channelList.scrollTop = guideContent.scrollTop;
+            }
         });
 
         updateTime();
+        updateProgramStates();
         setInterval(updateTime, 60000);
+        setInterval(updateProgramStates, 60000);
 
         window.addEventListener('load', function() {
             setTimeout(jumpToNow, 100);
