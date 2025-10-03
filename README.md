@@ -22,8 +22,6 @@ Popcorn is a Flask-based web application that creates cable TV-style movie chann
 - **Session Management**: Flask sessions with secret key configuration
 - **Logging**: Python's built-in logging module for application monitoring
 
-**Design Decision**: Flask was chosen for its simplicity and ease of integration with Python libraries for media management. SQLAlchemy provides database flexibility without being tied to a specific database engine.
-
 ### Data Storage
 - **Database**: SQLAlchemy-based (default SQLite via `popcorn.db`)
 - **Schema Design**:
@@ -31,10 +29,6 @@ Popcorn is a Flask-based web application that creates cable TV-style movie chann
   - `schedules` table: Stores generated TV schedules (channel, movie_id, start_time, end_time, day)
   - `holiday_channels` table: Defines seasonal channels (name, date ranges, keywords, rating filters)
   - `settings` table: Application configuration (shuffle frequency, etc.)
-
-**Unique Constraint**: Movies have a composite unique constraint on `plex_id` and `genre` to handle movies with multiple genres
-
-**Rationale**: SQLite provides zero-configuration persistence suitable for personal media servers. The schema supports many-to-many relationships between movies and schedules while maintaining referential integrity.
 
 ### Core Components
 
@@ -44,7 +38,6 @@ Popcorn is a Flask-based web application that creates cable TV-style movie chann
 - Requires `PLEX_URL` and `PLEX_TOKEN` environment variables
 - Gracefully handles connection failures with logging
 
-**Design Decision**: Direct integration with Plex API ensures real-time access to the user's actual media library without manual data entry.
 
 #### Schedule Generator (`scheduler.py`)
 - Generates cable TV-style schedules for genre-based channels
@@ -58,7 +51,6 @@ Popcorn is a Flask-based web application that creates cable TV-style movie chann
 - Multi-genre support (same movie can appear on multiple channels)
 - Pre-configured holiday channels (Cozy Halloween, Scary Halloween, Christmas)
 
-**Rationale**: Automated scheduling recreates the serendipitous discovery experience of cable TV while respecting content appropriateness through rating filters.
 
 #### Application Initialization
 - Database initialization on startup
