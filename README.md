@@ -14,7 +14,6 @@ Popcorn is a Flask-based web application that creates cable TV-style movie chann
 - **JavaScript**: Minimal client-side scripting for interactive elements (play buttons, navigation)
 - **Design Pattern**: Traditional server-side rendering with full page loads
 
-**Rationale**: Server-side rendering provides simplicity and doesn't require a complex frontend build process. Bootstrap ensures mobile responsiveness out of the box.
 
 ### Backend Architecture
 - **Framework**: Flask (Python) for lightweight web serving
