@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .error-container {
+            text-align: center;
+            max-width: 600px;
+            padding: 60px 40px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .error-icon {
+            font-size: 5rem;
+            color: var(--accent);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .home-button {
+            background: var(--accent);
+            border: none;
+            color: var(--bg-primary);
+            padding: 12px 30px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .home-button:hover {
+            background: var(--accent-hover);
+            color: var(--bg-primary);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h1>Oops! Something went wrong</h1>
+        <p class="error-message">{{ message }}</p>
+        <a href="/guide" class="home-button">
+            <i class="fas fa-home"></i> Go to Home
+        </a>
+    </div>
+</body>
+</html>

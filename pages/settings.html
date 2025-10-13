@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-menu-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-menu-toggle:hover {
+            color: var(--accent);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+        }
+
+        .header-user-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .nav-menu {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px var(--shadow);
+            overflow-y: auto;
+        }
+
+        .nav-menu.open {
+            left: 0;
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-backdrop.show {
+            display: block;
+        }
+
+        .menu-section {
+            padding: 15px 0;
+        }
+
+        .menu-section-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .menu-item {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .menu-item.active {
+            background: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .menu-item.active i {
+            opacity: 1;
+        }
+
+        .menu-spacer {
+            flex: 1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .alert {
+            background: #1a4d1a;
+            border: 1px solid #2a6d2a;
+            color: #4ade80;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .settings-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header h4 {
+            font-size: 1.2rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-text {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .form-static {
+            padding: 10px 0;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-warning {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            margin-left: 10px;
+        }
+
+        .btn-warning:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .holiday-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .holiday-item {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .holiday-item h6 {
+            margin-bottom: 5px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .holiday-item small {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .holiday-item p {
+            margin: 10px 0 0 0;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list .icon-check {
+            color: #4ade80;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 8px 15px;
+            font-size: 0.85rem;
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .form-range {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            margin: 10px 0;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .form-range::-webkit-slider-thumb:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+
+        .form-range::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .form-range::-moz-range-thumb:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        @media (max-width: 968px) {
+            .settings-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <button class="header-menu-toggle" onclick="toggleMenu()" title="Menu" aria-label="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="header-title">
+                <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
+                Popcorn TV Guide
+            </div>
+        </div>
+        <div class="header-right">
+            <img src="{{ current_user.avatar_url if current_user.avatar_url else '/static/images/default-avatar.png' }}" 
+                 alt="Avatar" 
+                 class="header-user-avatar"
+                 loading="lazy"
+                 onerror="this.src='/static/images/default-avatar.png'">
+            <span class="header-user-name">{{ current_user.username }}</span>
+        </div>
+    </div>
+
+    <div class="menu-backdrop" id="menu-backdrop" onclick="toggleMenu()"></div>
+    
+    <div class="nav-menu" id="nav-menu">
+        <div class="menu-section">
+            <button class="menu-item" onclick="window.location.href='/guide'">
+                <i class="fas fa-th"></i>
+                <span>Guide</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/channels'">
+                <i class="fas fa-list"></i>
+                <span>Channels</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/profile'">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </button>
+        </div>
+        
+        <div class="menu-spacer"></div>
+        
+        <div class="menu-section-separator"></div>
+        <div class="menu-section">
+            <button class="menu-item active" onclick="window.location.href='/settings'">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            <form method="POST" action="/logout" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-cog"></i> Settings</h1>
+        </div>
+
+        {% if reshuffled %}
+        <div class="alert">
+            <i class="fas fa-check-circle"></i>
+            <span>Schedules have been reshuffled successfully!</span>
+        </div>
+        {% endif %}
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'success' %}
+                    <div class="alert">
+                        <i class="fas fa-check-circle"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% elif category == 'error' %}
+                    <div class="alert" style="background: #4d1a1a; border: 1px solid #6d2a2a; color: #f87171;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="settings-layout">
+            <div class="main-settings">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-server"></i> Plex Connection</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" id="plexConfigForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            
+                            <div class="form-group">
+                                <label for="plex_url" class="form-label">
+                                    Plex Server URL
+                                    <span style="color: #e74c3c;">*</span>
+                                </label>
+                                <input type="text" name="plex_url" id="plex_url" 
+                                       class="form-select" 
+                                       placeholder="http://192.168.1.100:32400"
+                                       value="{{ settings.plex_url or '' }}">
+                                <span class="form-text">
+                                    Your Plex server address (e.g., http://192.168.1.100:32400)
+                                </span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="plex_token" class="form-label">
+                                    Plex Token
+                                    <span style="color: #e74c3c;">*</span>
+                                </label>
+                                <input type="password" name="plex_token" id="plex_token" 
+                                       class="form-select" 
+                                       placeholder="Enter your Plex authentication token"
+                                       value="{{ settings.plex_token or '' }}">
+                                <span class="form-text">
+                                    Your Plex authentication token - <a href="https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/" target="_blank" style="color: var(--accent);">How to find your token</a>
+                                </span>
+                            </div>
+
+                            <div class="form-note" style="background: var(--bg-tertiary); padding: 15px; border-radius: 6px; margin: 15px 0;">
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                    <i class="fas fa-info-circle"></i> <strong>Note:</strong> Users can now set their own Plex playback devices in their Profile settings. 
+                                    This allows each user to choose their preferred client (Roku, Apple TV, Web Player, etc.) for movie playback.
+                                </p>
+                            </div>
+
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button type="submit" id="saveConfigBtn" class="btn btn-primary" style="flex: 1;">
+                                    <i class="fas fa-save"></i> Save & Sync Movies
+                                </button>
+                                <button type="button" id="testConnectionBtn" class="btn btn-warning" style="flex: 1;">
+                                    <i class="fas fa-plug"></i> Test Connection
+                                </button>
+                            </div>
+
+                            <div style="margin-top: 10px;">
+                                <small style="color: var(--text-secondary); display: block; text-align: center;">
+                                    <i class="fas fa-info-circle"></i> Saving will connect to Plex and sync your movie library
+                                </small>
+                            </div>
+
+                            <div id="testResult" style="margin-top: 15px; display: none;"></div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-users"></i> User Management</h4>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                            Manage user access, create invitations, and configure permissions for your Popcorn instance.
+                        </p>
+                        <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-primary" style="width: 100%; display: inline-block; text-align: center; padding: 12px;">
+                            <i class="fas fa-users-cog"></i> Manage Users
+                        </a>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-sync-alt"></i> Schedule Configuration</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <div class="form-group">
+                                <label for="shuffle_frequency" class="form-label">Reshuffle Frequency</label>
+                                <select name="shuffle_frequency" id="shuffle_frequency" class="form-select">
+                                    <option value="daily" {% if settings.shuffle_frequency == 'daily' %}selected{% endif %}>
+                                        Daily - Reshuffles every day
+                                    </option>
+                                    <option value="weekly" {% if settings.shuffle_frequency == 'weekly' %}selected{% endif %}>
+                                        Weekly - Reshuffles every 7 days
+                                    </option>
+                                    <option value="monthly" {% if settings.shuffle_frequency == 'monthly' %}selected{% endif %}>
+                                        Monthly - Reshuffles every 30 days
+                                    </option>
+                                </select>
+                                <span class="form-text">
+                                    Choose how often the schedule should automatically reshuffle
+                                </span>
+                            </div>
+
+                            {% if settings.last_shuffle_date %}
+                            <div class="form-group">
+                                <label class="form-label">Last Reshuffled</label>
+                                <div class="form-static">{{ settings.last_shuffle_date }}</div>
+                            </div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            
+                            <button type="submit" name="reshuffle_now" value="1" class="btn btn-warning">
+                                <i class="fas fa-sync"></i> Reshuffle Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-calendar-star"></i> Holiday Channels</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="holiday-list">
+                            <div class="holiday-item">
+                                <h6><i class="fas fa-ghost"></i> Cozy Halloween</h6>
+                                <small>Active: September - November</small>
+                                <p>Family-friendly Halloween movies (G, PG, PG-13)</p>
+                            </div>
+                            <div class="holiday-item">
+                                <h6><i class="fas fa-skull"></i> Scary Halloween</h6>
+                                <small>Active: September - November</small>
+                                <p>Adult horror movies (R, NR)</p>
+                            </div>
+                            <div class="holiday-item">
+                                <h6><i class="fas fa-tree"></i> Christmas</h6>
+                                <small>Active: November - January</small>
+                                <p>Christmas and holiday movies (All ratings)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-paint-brush"></i> Visual Settings</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <div class="form-group">
+                                <label for="current_glow_brightness" class="form-label">
+                                    Maximum Glow Brightness
+                                    <span style="color: var(--text-secondary); font-weight: normal; font-size: 0.9rem;">
+                                        ({{ settings.current_glow_brightness or 100 }}%)
+                                    </span>
+                                </label>
+                                <input type="range" name="current_glow_brightness" id="current_glow_brightness" 
+                                       class="form-range" 
+                                       min="0" max="100" step="5"
+                                       value="{{ settings.current_glow_brightness or 100 }}"
+                                       oninput="updateGlowBrightnessDisplay(this.value)">
+                                <span class="form-text">
+                                    Sets the maximum glow brightness for "Now Playing" items. Users can set their own brightness up to this limit.
+                                </span>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-settings">
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-sync-alt"></i> Updates</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Current Version</label>
+                            <div class="form-static" id="currentVersion">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </div>
+                        </div>
+
+                        <div id="updateNotification" style="display: none; background: #4d3a1a; border: 1px solid #6d5a2a; color: #fbbf24; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                            <i class="fas fa-exclamation-circle"></i> <strong>Update Available!</strong>
+                            <p style="margin: 10px 0 0 0; font-size: 0.85rem;" id="updateMessage"></p>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" onclick="checkForUpdates()" id="checkUpdateBtn" style="width: 100%; margin-bottom: 10px;">
+                            <i class="fas fa-search"></i> Check for Updates
+                        </button>
+
+                        <button type="button" class="btn btn-warning" onclick="startUpdate()" id="updateNowBtn" style="width: 100%; display: none; background: #fbbf24; color: #000;">
+                            <i class="fas fa-download"></i> Update Now
+                        </button>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-info-circle"></i> About</h4>
+                    </div>
+                    <div class="card-body">
+                        <h6>Popcorn</h6>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem;">Cable-style movie scheduler for Plex</p>
+                        
+                        <hr>
+                        
+                        <h6>Features</h6>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check icon-check"></i> Genre-based channels</li>
+                            <li><i class="fas fa-check icon-check"></i> Seasonal holiday channels</li>
+                            <li><i class="fas fa-check icon-check"></i> 24-hour TV schedules</li>
+                            <li><i class="fas fa-check icon-check"></i> Direct Plex playback</li>
+                        </ul>
+
+                        <hr>
+
+                        <a href="/api/clients" target="_blank" class="btn btn-outline">
+                            <i class="fas fa-desktop"></i> View Available Clients
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateGlowBrightnessDisplay(value) {
+            const label = document.querySelector('label[for="current_glow_brightness"] span');
+            if (label) {
+                label.textContent = `(${value}%)`;
+            }
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            const backdrop = document.getElementById('menu-backdrop');
+            
+            menu.classList.toggle('open');
+            backdrop.classList.toggle('show');
+        }
+
+        document.getElementById('plexConfigForm').addEventListener('submit', function() {
+            const saveBtn = document.getElementById('saveConfigBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting & Syncing...';
+        });
+
+        document.getElementById('testConnectionBtn').addEventListener('click', async function() {
+            const btn = this;
+            const resultDiv = document.getElementById('testResult');
+            const plexUrl = document.getElementById('plex_url').value;
+            const plexToken = document.getElementById('plex_token').value;
+            const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+            if (!plexUrl || !plexToken) {
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#4d1a1a';
+                resultDiv.style.border = '1px solid #6d2a2a';
+                resultDiv.style.color = '#f87171';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please enter both Plex URL and Token';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+
+            try {
+                const formData = new FormData();
+                formData.append('plex_url', plexUrl);
+                formData.append('plex_token', plexToken);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('/settings/test-plex', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                resultDiv.style.display = 'block';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+
+                if (data.success) {
+                    resultDiv.style.background = '#1a4d1a';
+                    resultDiv.style.border = '1px solid #2a6d2a';
+                    resultDiv.style.color = '#4ade80';
+                    resultDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+                } else {
+                    resultDiv.style.background = '#4d1a1a';
+                    resultDiv.style.border = '1px solid #6d2a2a';
+                    resultDiv.style.color = '#f87171';
+                    resultDiv.innerHTML = '<i class="fas fa-times-circle"></i> ' + data.message;
+                }
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#4d1a1a';
+                resultDiv.style.border = '1px solid #6d2a2a';
+                resultDiv.style.color = '#f87171';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error: ' + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+            }
+        });
+
+        // Update System Functions
+        async function checkForUpdates() {
+            const btn = document.getElementById('checkUpdateBtn');
+            const versionDiv = document.getElementById('currentVersion');
+            const notification = document.getElementById('updateNotification');
+            const updateBtn = document.getElementById('updateNowBtn');
+            const updateMsg = document.getElementById('updateMessage');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+
+            try {
+                const response = await fetch('/api/update/check');
+                const data = await response.json();
+
+                if (data.success) {
+                    versionDiv.innerHTML = `<code style="color: var(--accent);">${data.current_version}</code>`;
+
+                    if (data.update_available) {
+                        notification.style.display = 'block';
+                        
+                        // Truncate release notes if too long
+                        let notes = data.release_notes || data.latest_version_name || '';
+                        if (notes.length > 200) {
+                            notes = notes.substring(0, 200) + '...';
+                        }
+                        notes = notes.split('\n')[0]; // First line only
+                        
+                        if (data.is_docker) {
+                            updateBtn.style.display = 'none';
+                            updateMsg.innerHTML = `Version <code>${data.latest_version}</code> available<br>
+                                <small>${notes}</small><br>
+                                <small style="color: var(--text-secondary); margin-top: 5px; display: block;">Running in Docker: Please pull the latest image to update.</small>`;
+                        } else {
+                            updateBtn.style.display = 'block';
+                            updateMsg.innerHTML = `Version <code>${data.latest_version}</code> available<br>
+                                <small>${notes}</small>`;
+                        }
+                    } else {
+                        notification.style.display = 'none';
+                        updateBtn.style.display = 'none';
+                        versionDiv.innerHTML += '<br><small style="color: var(--text-secondary);">✓ Up to date</small>';
+                    }
+                } else {
+                    versionDiv.innerHTML = '<small style="color: #f87171;">Error checking version</small>';
+                }
+            } catch (error) {
+                versionDiv.innerHTML = '<small style="color: #f87171;">Error: ' + error.message + '</small>';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-search"></i> Check for Updates';
+            }
+        }
+
+        function startUpdate() {
+            const modal = document.getElementById('updateModal');
+            const progressList = document.getElementById('updateProgress');
+            const progressBar = document.getElementById('updateProgressBar');
+            const closeBtn = document.getElementById('closeUpdateModal');
+
+            modal.style.display = 'flex';
+            progressList.innerHTML = '<li><i class="fas fa-spinner fa-spin"></i> Initializing update...</li>';
+            progressBar.style.width = '0%';
+            closeBtn.disabled = true;
+
+            const eventSource = new EventSource('/api/update/stream');
+
+            eventSource.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+
+                if (data.heartbeat) {
+                    return;
+                }
+
+                if (data.step && data.message) {
+                    const icon = data.progress === 100 ? 'fa-check-circle' : 'fa-spinner fa-spin';
+                    const item = document.createElement('li');
+                    item.innerHTML = `<i class="fas ${icon}"></i> ${data.step}: ${data.message}`;
+                    progressList.appendChild(item);
+                    progressBar.style.width = data.progress + '%';
+                }
+
+                if (data.done) {
+                    eventSource.close();
+                    closeBtn.disabled = false;
+                    
+                    if (data.result.success) {
+                        const item = document.createElement('li');
+                        item.innerHTML = '<i class="fas fa-check-circle" style="color: #4ade80;"></i> <strong>Update complete! Please restart the application.</strong>';
+                        progressList.appendChild(item);
+                        progressBar.style.width = '100%';
+                    } else {
+                        const item = document.createElement('li');
+                        item.innerHTML = `<i class="fas fa-times-circle" style="color: #f87171;"></i> <strong>Update failed: ${data.result.error}</strong>`;
+                        progressList.appendChild(item);
+                    }
+                }
+
+                if (data.error) {
+                    eventSource.close();
+                    const item = document.createElement('li');
+                    item.innerHTML = `<i class="fas fa-times-circle" style="color: #f87171;"></i> Error: ${data.error}`;
+                    progressList.appendChild(item);
+                    closeBtn.disabled = false;
+                }
+            };
+
+            eventSource.onerror = function() {
+                eventSource.close();
+                const item = document.createElement('li');
+                item.innerHTML = '<i class="fas fa-times-circle" style="color: #f87171;"></i> Connection error';
+                progressList.appendChild(item);
+                closeBtn.disabled = false;
+            };
+        }
+
+        function closeUpdateModal() {
+            document.getElementById('updateModal').style.display = 'none';
+        }
+
+        // Check for updates on page load
+        window.addEventListener('load', function() {
+            checkForUpdates();
+        });
+    </script>
+
+    <!-- Update Modal -->
+    <div id="updateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
+        <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; padding: 30px; max-width: 600px; width: 90%;">
+            <h3 style="margin: 0 0 20px 0; display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-download"></i> Updating Popcorn
+            </h3>
+            
+            <div style="background: var(--bg-tertiary); border-radius: 8px; padding: 20px; margin-bottom: 20px; max-height: 300px; overflow-y: auto;">
+                <ul id="updateProgress" style="list-style: none; padding: 0; margin: 0;">
+                    <li><i class="fas fa-spinner fa-spin"></i> Initializing...</li>
+                </ul>
+            </div>
+
+            <div style="background: var(--bg-tertiary); border-radius: 4px; height: 24px; margin-bottom: 20px; overflow: hidden;">
+                <div id="updateProgressBar" style="background: var(--accent); height: 100%; width: 0%; transition: width 0.3s ease;"></div>
+            </div>
+
+            <button onclick="closeUpdateModal()" id="closeUpdateModal" class="btn btn-primary" style="width: 100%;" disabled>
+                <i class="fas fa-times"></i> Close
+            </button>
+        </div>
+    </div>
+</body>
+</html>

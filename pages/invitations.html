@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitation Codes - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --bg-tertiary: #3d3d3d;
+            --accent: #e5a00d;
+            --accent-hover: #f5b01d;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --text-muted: #888888;
+            --border: #444444;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--accent);
+            margin-bottom: 30px;
+        }
+
+        .invitations-list {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .invitation-item {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .invitation-item:last-child {
+            border-bottom: none;
+        }
+
+        .invitation-info {
+            flex: 1;
+        }
+
+        .invitation-code {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .invitation-details {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .invitation-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .btn-delete {
+            background: #c92a2a;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #a61e1e;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/settings" class="back-link"><i class="fas fa-arrow-left"></i> Back to Settings</a>
+        <h1><i class="fas fa-ticket-alt"></i> Invitation Codes</h1>
+        
+        {% if invitations %}
+        <div class="invitations-list">
+            {% for invitation in invitations %}
+            <div class="invitation-item">
+                <div class="invitation-info">
+                    <div class="invitation-code">{{ invitation.code }}</div>
+                    <div class="invitation-details">
+                        {% if invitation.email %}Email: {{ invitation.email }} | {% endif %}
+                        Created: {{ invitation.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% if invitation.expires_at %} | Expires: {{ invitation.expires_at.strftime('%Y-%m-%d') }}{% endif %}
+                        {% if invitation.used_by %} | <span style="color: #51cf66;">Used</span>{% elif not invitation.is_active %} | <span style="color: #fa5252;">Inactive</span>{% else %} | <span style="color: #4dabf7;">Active</span>{% endif %}
+                    </div>
+                </div>
+                <div class="invitation-actions">
+                    {% if invitation.is_active and not invitation.used_by %}
+                    <form method="POST" action="/users/invitations/{{ invitation.id }}/delete" onsubmit="return confirm('Delete this invitation code?');" style="margin: 0;">
+                        <button type="submit" class="btn btn-delete">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="background: var(--bg-secondary); padding: 40px; text-align: center; border-radius: 8px;">
+            <p style="color: var(--text-muted);">No invitation codes found.</p>
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Popcorn - Channels</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-menu-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-menu-toggle:hover {
+            color: var(--accent);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+        }
+
+        .header-user-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .nav-menu {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px var(--shadow);
+            overflow-y: auto;
+        }
+
+        .nav-menu.open {
+            left: 0;
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-backdrop.show {
+            display: block;
+        }
+
+        .menu-section {
+            padding: 15px 0;
+        }
+
+        .menu-section-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .menu-item {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .menu-item.active {
+            background: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .menu-item.active i {
+            opacity: 1;
+        }
+
+        .menu-spacer {
+            flex: 1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .channels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .channel-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .channel-card:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--border);
+            transform: translateY(-5px);
+        }
+
+        .channel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .channel-icon {
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .channel-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .now-playing {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+            color: var(--bg-primary);
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+
+        .now-playing-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .now-playing-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .now-playing-year {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .no-content {
+            color: var(--text-muted);
+            padding: 12px;
+            text-align: center;
+        }
+
+        .view-schedule-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: block;
+            text-decoration: none;
+        }
+
+        .view-schedule-btn:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .empty-state {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            margin-bottom: 25px;
+        }
+
+        .sync-btn {
+            background: var(--accent);
+            border: none;
+            color: var(--bg-primary);
+            padding: 12px 30px;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .sync-btn:hover {
+            background: var(--accent-hover);
+            color: var(--bg-primary);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <button class="header-menu-toggle" onclick="toggleMenu()" title="Menu" aria-label="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="header-title">
+                <img src="/static/images/logo.png" alt="Popcorn" style="height: 32px; width: 32px; margin-right: 10px; vertical-align: middle;">
+                Popcorn TV Guide
+            </div>
+        </div>
+        <div class="header-right">
+            <img src="{{ current_user.avatar_url if current_user.avatar_url else '/static/images/default-avatar.png' }}" 
+                 alt="Avatar" 
+                 class="header-user-avatar"
+                 loading="lazy"
+                 onerror="this.src='/static/images/default-avatar.png'">
+            <span class="header-user-name">{{ current_user.username }}</span>
+        </div>
+    </div>
+
+    <div class="menu-backdrop" id="menu-backdrop" onclick="toggleMenu()"></div>
+    
+    <div class="nav-menu" id="nav-menu">
+        <div class="menu-section">
+            <button class="menu-item" onclick="window.location.href='/guide'">
+                <i class="fas fa-th"></i>
+                <span>Guide</span>
+            </button>
+            <button class="menu-item active" onclick="window.location.href='/channels'">
+                <i class="fas fa-list"></i>
+                <span>Channels</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/profile'">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </button>
+        </div>
+        
+        <div class="menu-spacer"></div>
+        
+        <div class="menu-section-separator"></div>
+        <div class="menu-section">
+            {% if current_user.is_admin %}
+            <button class="menu-item" onclick="window.location.href='/settings'">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            {% endif %}
+            <form method="POST" action="/logout" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-satellite-dish"></i> Available Channels</h1>
+            <p>Browse through our cable-style movie channels</p>
+        </div>
+
+        {% if channels %}
+        <div class="channels-grid">
+            {% for channel in channels %}
+            <div class="channel-card" onclick="window.location.href='/channel/{{ channel.name }}'">
+                <div class="channel-header">
+                    <div class="channel-icon">
+                        {% if channel.name == 'Cozy Halloween' %}
+                        <i class="fas fa-ghost"></i>
+                        {% elif channel.name == 'Scary Halloween' %}
+                        <i class="fas fa-skull"></i>
+                        {% elif channel.name == 'Christmas' %}
+                        <i class="fas fa-tree"></i>
+                        {% else %}
+                        <i class="fas fa-film"></i>
+                        {% endif %}
+                    </div>
+                    <div class="channel-name">{{ channel.name }}</div>
+                </div>
+                
+                {% if channel.current %}
+                <div class="now-playing">
+                    <div class="now-playing-label">
+                        <i class="fas fa-play-circle"></i> NOW PLAYING
+                    </div>
+                    <div class="now-playing-title">{{ channel.current.title }}</div>
+                    {% if channel.current.year %}
+                    <div class="now-playing-year">({{ channel.current.year }})</div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="no-content">No movies scheduled</div>
+                {% endif %}
+                
+                <a href="/channel/{{ channel.name }}" class="view-schedule-btn">
+                    <i class="fas fa-tv"></i> View Schedule
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h3>No Channels Available</h3>
+            <p>Please sync your Plex library to generate channels.</p>
+            <form method="POST" action="/sync">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="sync-btn">
+                    <i class="fas fa-sync"></i> Sync Now
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            const backdrop = document.getElementById('menu-backdrop');
+            
+            menu.classList.toggle('open');
+            backdrop.classList.toggle('show');
+        }
+    </script>
+</body>
+</html>

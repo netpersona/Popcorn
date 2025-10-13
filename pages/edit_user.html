@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-menu-toggle {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            transition: color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-menu-toggle:hover {
+            color: var(--accent);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border);
+        }
+
+        .header-user-name {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title img {
+            height: 32px;
+            width: 32px;
+        }
+
+        .nav-menu {
+            position: fixed;
+            left: -300px;
+            top: 0;
+            width: 300px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 10px var(--shadow);
+            overflow-y: auto;
+        }
+
+        .nav-menu.open {
+            left: 0;
+        }
+
+        .menu-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 999;
+        }
+
+        .menu-backdrop.show {
+            display: block;
+        }
+
+        .menu-section {
+            padding: 15px 0;
+        }
+
+        .menu-section-separator {
+            height: 1px;
+            background: var(--border);
+            margin: 0;
+        }
+
+        .menu-item {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            text-align: left;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .menu-item.active {
+            background: var(--bg-primary);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .menu-item i {
+            width: 20px;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .menu-item.active i {
+            opacity: 1;
+        }
+
+        .menu-spacer {
+            flex: 1;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header h4 {
+            margin: 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        .user-info-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .user-info-header img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+            border: 3px solid var(--border);
+        }
+
+        .user-info-header h5 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .user-info-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .form-check {
+            background: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .form-check:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-check-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .form-check-input {
+            width: 50px;
+            height: 26px;
+            cursor: pointer;
+            position: relative;
+            appearance: none;
+            background: var(--bg-tertiary);
+            border-radius: 13px;
+            transition: background 0.3s;
+        }
+
+        .form-check-input:checked {
+            background: var(--accent);
+        }
+
+        .form-check-input::before {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            background: var(--text-primary);
+            transition: transform 0.3s;
+        }
+
+        .form-check-input:checked::before {
+            transform: translateX(24px);
+        }
+
+        .form-text {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding-left: 60px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .alert-info {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        .alert-warning {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--accent);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-tertiary);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <button class="header-menu-toggle" onclick="toggleMenu()" title="Menu" aria-label="Open Menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="header-title">
+                <img src="/static/images/logo.png" alt="Popcorn">
+                Popcorn - Edit User
+            </div>
+        </div>
+        <div class="header-right">
+            <img src="{{ current_user.avatar_url if current_user.avatar_url else '/static/images/default-avatar.png' }}" 
+                 alt="Avatar" 
+                 class="header-user-avatar"
+                 loading="lazy"
+                 onerror="this.src='/static/images/default-avatar.png'">
+            <span class="header-user-name">{{ current_user.username }}</span>
+        </div>
+    </div>
+
+    <div class="menu-backdrop" id="menu-backdrop" onclick="toggleMenu()"></div>
+    
+    <div class="nav-menu" id="nav-menu">
+        <div class="menu-section">
+            <button class="menu-item" onclick="window.location.href='/guide'">
+                <i class="fas fa-th"></i>
+                <span>Guide</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/channels'">
+                <i class="fas fa-list"></i>
+                <span>Channels</span>
+            </button>
+            <button class="menu-item" onclick="window.location.href='/profile'">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </button>
+        </div>
+        
+        <div class="menu-spacer"></div>
+        
+        <div class="menu-section-separator"></div>
+        <div class="menu-section">
+            {% if current_user.is_admin %}
+            <button class="menu-item" onclick="window.location.href='/settings'">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </button>
+            {% endif %}
+            <form method="POST" action="/logout" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-user-edit"></i> Edit User: {{ user.username }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="user-info-header">
+                    <img src="{{ user.avatar_url if user.avatar_url else '/static/images/default-avatar.png' }}" 
+                         alt="{{ user.username }}" 
+                         onerror="this.src='/static/images/default-avatar.png'">
+                    <h5>{{ user.username }}</h5>
+                    {% if user.email %}
+                    <p><i class="fas fa-envelope"></i> {{ user.email }}</p>
+                    {% endif %}
+                </div>
+
+                <form method="POST" action="{{ url_for('user_mgmt.edit_user', user_id=user.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    
+                    <div class="form-group">
+                        <label>Permissions</label>
+                        <div class="form-check">
+                            <label class="form-check-label" for="is_admin">
+                                <input class="form-check-input" type="checkbox" id="is_admin" name="is_admin" 
+                                       {% if user.is_admin %}checked{% endif %}>
+                                <span>
+                                    <i class="fas fa-crown" style="color: var(--accent);"></i> <strong>Administrator</strong>
+                                </span>
+                            </label>
+                            <small class="form-text">
+                                Admins can manage users, settings, and all content
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Account Status</label>
+                        <div class="form-check">
+                            <label class="form-check-label" for="is_active">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                       {% if user.is_active %}checked{% endif %}>
+                                <span>
+                                    <i class="fas fa-check-circle" style="color: var(--accent);"></i> <strong>Active</strong>
+                                </span>
+                            </label>
+                            <small class="form-text">
+                                Inactive users cannot log in
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            <strong>Created:</strong> {{ user.created_at.strftime('%B %d, %Y at %I:%M %p') if user.created_at else 'Unknown' }}
+                            <br>
+                            <strong>Last Login:</strong> {{ user.last_login.strftime('%B %d, %Y at %I:%M %p') if user.last_login else 'Never' }}
+                        </div>
+                    </div>
+
+                    {% if user.id == current_user.id %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>You cannot modify your own permissions.</div>
+                    </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn btn-primary" {% if user.id == current_user.id %}disabled{% endif %}>
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to User List
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            const backdrop = document.getElementById('menu-backdrop');
+            
+            menu.classList.toggle('open');
+            backdrop.classList.toggle('show');
+        }
+    </script>
+</body>
+</html>

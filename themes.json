@@ -1,0 +1,242 @@
+{
+  "plex": {
+    "name": "Plex",
+    "description": "Classic dark theme with golden accents",
+    "colors": {
+      "bg-primary": "#121212",
+      "bg-secondary": "#1a1a1a",
+      "bg-tertiary": "#2a2a2a",
+      "accent": "#e5a00d",
+      "accent-hover": "#f5b01d",
+      "text-primary": "#ffffff",
+      "text-secondary": "#b0b0b0",
+      "text-muted": "#808080",
+      "border": "#333333",
+      "shadow": "rgba(0, 0, 0, 0.5)"
+    }
+  },
+  "halloween": {
+    "name": "Halloween",
+    "description": "Spooky season theme with coral, brown, and cream tones",
+    "colors": {
+      "bg-primary": "#F7EEDD",
+      "bg-secondary": "#ede4d3",
+      "bg-tertiary": "#c4bcab",
+      "accent": "#FF7F50",
+      "accent-hover": "#ffd299",
+      "text-primary": "#000000",
+      "text-secondary": "#2c2c2c",
+      "text-muted": "#8f1e00",
+      "border": "#dd6236",
+      "shadow": "rgba(255, 127, 80, 0.3)"
+    }
+  },
+  "hell_o_ween": {
+    "name": "Hell-o-ween",
+    "description": "Dark theme with fiery orange and red accents",
+    "colors": {
+      "bg-primary": "#1C1C1C",
+      "bg-secondary": "#2b2b2b",
+      "bg-tertiary": "#434343",
+      "accent": "#FF4500",
+      "accent-hover": "#ff7b3a",
+      "text-primary": "#FFFFFF",
+      "text-secondary": "#e0e0e0",
+      "text-muted": "#ffa282",
+      "border": "#8B0000",
+      "shadow": "rgba(255, 69, 0, 0.4)"
+    }
+  },
+  "pastel_dream": {
+    "name": "Pastel Dream",
+    "description": "Soft pastel colors for a dreamy look",
+    "colors": {
+      "bg-primary": "#f8f4fc",
+      "bg-secondary": "#ffffff",
+      "bg-tertiary": "#ede8f5",
+      "accent": "#ffafcc",
+      "accent-hover": "#ff9ebd",
+      "text-primary": "#2d1b47",
+      "text-secondary": "#5a4a6a",
+      "text-muted": "#8a7a9a",
+      "border": "#e0d0f0",
+      "shadow": "rgba(205, 180, 219, 0.3)"
+    }
+  },
+  "plastic": {
+    "name": "Plastic",
+    "description": "Vibrant pink theme with high contrast",
+    "colors": {
+      "bg-primary": "#ffe5ec",
+      "bg-secondary": "#ffffff",
+      "bg-tertiary": "#ffc2d1",
+      "accent": "#fb6f92",
+      "accent-hover": "#ff8fab",
+      "text-primary": "#4a1928",
+      "text-secondary": "#7a3948",
+      "text-muted": "#aa5968",
+      "border": "#ffc2d1",
+      "shadow": "rgba(251, 111, 146, 0.3)"
+    }
+  },
+  "popcorn": {
+    "name": "Popcorn",
+    "description": "Warm theater-inspired colors",
+    "colors": {
+      "bg-primary": "#1F2937",
+      "bg-secondary": "#374151",
+      "bg-tertiary": "#4B5563",
+      "accent": "#FBBF24",
+      "accent-hover": "#C2410C",
+      "text-primary": "#FEF9C3",
+      "text-secondary": "#E5D9B6",
+      "text-muted": "#9CA3AF",
+      "border": "#4B5563",
+      "shadow": "rgba(0, 0, 0, 0.6)"
+    }
+  },
+  "midnight_harmony": {
+    "name": "Midnight Harmony",
+    "description": "Deep purple theme with vibrant accents",
+    "colors": {
+      "bg-primary": "#110e20",
+      "bg-secondary": "#211a3c",
+      "bg-tertiary": "#352b5f",
+      "accent": "#634eca",
+      "accent-hover": "#4d3c9f",
+      "text-primary": "#ffffff",
+      "text-secondary": "#d0c9e8",
+      "text-muted": "#9b8fc9",
+      "border": "#352b5f",
+      "shadow": "rgba(0, 0, 0, 0.7)"
+    }
+  },
+  "ichor_wine": {
+    "name": "Ichor Wine",
+    "description": "Rich wine tones with deep burgundy accents",
+    "colors": {
+      "bg-primary": "#240915",
+      "bg-secondary": "#350e28",
+      "bg-tertiary": "#411538",
+      "accent": "#772753",
+      "accent-hover": "#53233c",
+      "text-primary": "#ffffff",
+      "text-secondary": "#e8c9d9",
+      "text-muted": "#b88fa3",
+      "border": "#411538",
+      "shadow": "rgba(0, 0, 0, 0.7)"
+    }
+  },
+  "vampirism": {
+    "name": "Vampirism",
+    "description": "Dark purple and magenta vampire aesthetic",
+    "colors": {
+      "bg-primary": "#2B0A3D",
+      "bg-secondary": "#3c1a4e",
+      "bg-tertiary": "#563268",
+      "accent": "#A40E4C",
+      "accent-hover": "#ffb2d7",
+      "text-primary": "#FFFFFF",
+      "text-secondary": "#e0e0e0",
+      "text-muted": "#a13c40",
+      "border": "#6D071A",
+      "shadow": "rgba(107, 7, 26, 0.7)"
+    }
+  },
+  "lavender": {
+    "name": "Lavender",
+    "description": "Soft lavender light theme with purple accents",
+    "colors": {
+      "bg-primary": "#F5F3F7",
+      "bg-secondary": "#E9E4ED",
+      "bg-tertiary": "#FFFFFF",
+      "accent": "#8B5FBF",
+      "accent-hover": "#9A73B5",
+      "text-primary": "#4A4A4A",
+      "text-secondary": "#878787",
+      "text-muted": "#61398F",
+      "border": "#D6C6E1",
+      "shadow": "rgba(97, 57, 143, 0.2)"
+    }
+  },
+  "starry_night": {
+    "name": "Starry Night",
+    "description": "Dark blue night sky with golden stars and cyan accents",
+    "colors": {
+      "bg-primary": "#0B0F2B",
+      "bg-secondary": "#1a1e3b",
+      "bg-tertiary": "#333554",
+      "accent": "#FFC107",
+      "accent-hover": "#dda400",
+      "text-primary": "#FFFFFF",
+      "text-secondary": "#9c9c9c",
+      "text-muted": "#005e74",
+      "border": "#00BCD4",
+      "shadow": "rgba(0, 0, 0, 0.8)"
+    }
+  },
+  "synthwave": {
+    "name": "80s Neon",
+    "description": "Synthwave vibes with neon pink and cyan grid aesthetics",
+    "colors": {
+      "bg-primary": "#0a0a1f",
+      "bg-secondary": "#1a1a3e",
+      "bg-tertiary": "#2a2a5e",
+      "accent": "#ff00ff",
+      "accent-hover": "#ff66ff",
+      "text-primary": "#00ffff",
+      "text-secondary": "#66ffff",
+      "text-muted": "#ff1493",
+      "border": "#ff00ff",
+      "shadow": "rgba(255, 0, 255, 0.5)"
+    }
+  },
+  "movie_theater": {
+    "name": "Movie Theater",
+    "description": "Classic cinema with red velvet and gold accents",
+    "colors": {
+      "bg-primary": "#1a0000",
+      "bg-secondary": "#2d0000",
+      "bg-tertiary": "#4a0000",
+      "accent": "#ffd700",
+      "accent-hover": "#ffed4e",
+      "text-primary": "#ffffff",
+      "text-secondary": "#f5e6d3",
+      "text-muted": "#b8860b",
+      "border": "#8b0000",
+      "shadow": "rgba(139, 0, 0, 0.6)"
+    }
+  },
+  "minimalist": {
+    "name": "Minimalist",
+    "description": "Ultra-clean Apple TV inspired design with subtle gradients",
+    "colors": {
+      "bg-primary": "#fafafa",
+      "bg-secondary": "#ffffff",
+      "bg-tertiary": "#f5f5f5",
+      "accent": "#007aff",
+      "accent-hover": "#0051d5",
+      "text-primary": "#1d1d1f",
+      "text-secondary": "#424245",
+      "text-muted": "#86868b",
+      "border": "#d2d2d7",
+      "shadow": "rgba(0, 0, 0, 0.1)"
+    }
+  },
+  "dark_cinema": {
+    "name": "Dark Cinema",
+    "description": "Deep blacks with amber and blue theatrical lighting",
+    "colors": {
+      "bg-primary": "#000000",
+      "bg-secondary": "#0a0a0a",
+      "bg-tertiary": "#141414",
+      "accent": "#ff9500",
+      "accent-hover": "#ffb340",
+      "text-primary": "#ffffff",
+      "text-secondary": "#a8a8a8",
+      "text-muted": "#5ac8fa",
+      "border": "#1c1c1e",
+      "shadow": "rgba(0, 0, 0, 0.9)"
+    }
+  }
+}
