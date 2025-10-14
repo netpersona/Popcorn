@@ -1,3 +1,5 @@
+<img width="200" height="200" alt="popcorn-logo" src="https://github.com/user-attachments/assets/7d084617-2720-4a9b-841f-fa2adb3072a1" /> 
+
 # Popcorn - Cable-Style Movie Scheduler
 
 ## Overview
