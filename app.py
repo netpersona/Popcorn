@@ -523,10 +523,12 @@ def check_plex_pin(pin_id):
     has_access, error_msg = PlexAPI.verify_library_access(settings.plex_url, auth_token)
     
     if not has_access:
+        # Optionally log the detailed error_msg for server-side debugging
+        logger.warning(f"User library access failed: {error_msg}")
         return jsonify({
             'success': False,
             'status': 'no_library_access',
-            'message': f'You do not have access to this Plex server. {error_msg or ""}'
+            'message': 'You do not have access to this Plex server.'
         })
     
     # Smart merge logic: plex_id → email → create new
