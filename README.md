@@ -27,11 +27,6 @@ Users can choose which channels show up on their dashboard:
 - Self-service password change functionality
 - Enhanced deployment readiness for public demo environments
 
-## User Preferences
-I prefer detailed explanations.
-Do not make changes to the folder `Z`.
-Do not make changes to the file `Y`.
-
 ## System Architecture
 
 ### Frontend Architecture
