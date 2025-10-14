@@ -47,7 +47,7 @@ Do not make changes to the file `Y`.
 
 ### Backend Architecture
 -   **Framework**: Flask (Python).
--   **Template Folder**: `pages/` directory (renamed from `templates/` for clarity).
+-   **HTML pages**: `pages/` directory.
 -   **ORM**: SQLAlchemy.
 -   **Session Management**: Flask sessions.
 -   **Logging**: Python's built-in logging module.
