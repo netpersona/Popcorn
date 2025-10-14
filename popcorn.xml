@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Popcorn</Name>
+  <Repository>netpersona/popcorn:latest</Repository>
+  <Registry>https://hub.docker.com/r/netpersona/popcorn/</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/netpersona/Popcorn/issues</Support>
+  <Project>https://github.com/netpersona/Popcorn</Project>
+  <Overview>Popcorn creates cable TV-style movie channels from your Plex media library. It automatically generates genre-based channels and seasonal holiday channels with 24-hour schedules, presented in a nostalgic TV guide interface.</Overview>
+  <Category>MediaApp:Video MediaServer:Video</Category>
+  <WebUI>http://[IP]:[PORT:5000]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/netpersona/unraid-templates/main/popcorn.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/netpersona/unraid-templates/main/icons/popcorn.png</Icon>
+  <Config Name="WebUI Port" Target="5000" Default="5000" Mode="tcp" Description="Port for accessing the Popcorn web interface" Type="Port" Display="always" Required="true" Mask="false">5000</Config>
+  <Config Name="Session Secret" Target="SESSION_SECRET" Default="" Mode="" Description="Random secret key for session security. Generate a random string (recommended: 32+ characters)" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Plex Server URL" Target="PLEX_URL" Default="http://192.168.1.100:32400" Mode="" Description="URL of your Plex Media Server (e.g., http://192.168.1.100:32400)" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.100:32400</Config>
+  <Config Name="Plex Authentication Token" Target="PLEX_TOKEN" Default="" Mode="" Description="Your Plex authentication token. See User Guide for instructions on obtaining this." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Plex Client Name" Target="PLEX_CLIENT" Default="" Mode="" Description="Name of your Plex playback device (e.g., 'Roku Living Room'). Optional - leave blank if not using direct playback." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="AppData" Target="/config" Default="/mnt/user/appdata/popcorn" Mode="rw" Description="Container data directory (database and application files)" Type="Path" Display="advanced" Required="true" Mask="false">/mnt/user/appdata/popcorn</Config>
+</Container>
