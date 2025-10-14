@@ -141,8 +141,8 @@ class PlexAPI:
                     client.playMedia(movie)
                     logger.info(f"Sent playMedia command to {client.title}")
                 except Exception as e:
-                    logger.error(f"Failed to start playback: {e}")
-                    return False, f"Playback failed: {str(e)}. Make sure your Plex client is responding.", 0
+                    logger.error(f"Failed to start playback: {e}", exc_info=True)
+                    return False, "Playback failed. Please check your Plex client and try again.", 0
                 
                 if offset_ms > 0:
                     import time
