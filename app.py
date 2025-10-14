@@ -1088,9 +1088,10 @@ def test_plex_connection():
             'message': f'Successfully connected to: {server_name}'
         })
     except Exception as e:
+        logging.exception(f'Error testing Plex connection for user {current_user.id}')
         return jsonify({
             'success': False,
-            'message': f'Connection failed: {str(e)}'
+            'message': 'Connection failed: An internal error occurred.'
         })
 
 @app.route('/api/clients')
