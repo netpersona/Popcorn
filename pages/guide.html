@@ -1094,6 +1094,34 @@
             font-size: 1.3rem;
         }
         
+        .device-select-dropdown {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+
+        .device-select-dropdown:hover {
+            border-color: var(--accent);
+        }
+
+        .device-select-dropdown:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+        }
+
+        .device-select-dropdown option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            padding: 10px;
+        }
+        
         .security-warning {
             background: linear-gradient(135deg, #ff4757 0%, #ff6348 100%);
             color: #ffffff;
@@ -1136,6 +1164,446 @@
         
         .security-warning a:hover {
             color: #ffeaa7;
+        }
+
+        /* ========================================
+           RESPONSIVE DESIGN - MEDIA QUERIES
+        ======================================== */
+
+        /* Tablet (600px - 1023px) */
+        @media screen and (max-width: 1023px) and (min-width: 600px) {
+            .header {
+                padding: 12px 15px;
+            }
+
+            .header-search input {
+                width: 200px;
+            }
+
+            .header-search input:focus {
+                width: 250px;
+            }
+
+            .header-title {
+                font-size: 1.3rem;
+            }
+
+            .channel-rail {
+                width: 140px;
+            }
+
+            .time-slot {
+                font-size: 0.75rem;
+            }
+
+            .program-tile {
+                height: 100px;
+            }
+
+            .program-title {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Mobile (<600px) */
+        @media screen and (max-width: 599px) {
+            body {
+                overflow: auto;
+            }
+
+            .header {
+                padding: 10px 12px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .header-left {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .header-title {
+                font-size: 1.1rem;
+                white-space: nowrap;
+            }
+
+            .header-logo {
+                height: 24px;
+                width: 24px;
+                margin-right: 6px;
+            }
+
+            .header-time {
+                font-size: 0.75rem;
+            }
+
+            .header-search {
+                order: 3;
+                width: 100%;
+                margin: 0;
+                flex-basis: 100%;
+            }
+
+            .header-search input {
+                width: 100%;
+                font-size: 0.85rem;
+                padding: 10px 35px 10px 12px;
+            }
+
+            .header-search input:focus {
+                width: 100%;
+            }
+
+            .header-right {
+                gap: 8px;
+            }
+
+            .header-user-name {
+                display: none;
+            }
+
+            .header-user-avatar {
+                width: 32px;
+                height: 32px;
+            }
+
+            .header-menu-toggle {
+                min-width: 44px;
+                min-height: 44px;
+                padding: 12px;
+            }
+
+            /* Hide channel rail on mobile */
+            .channel-rail {
+                display: none;
+            }
+
+            /* Full-width hamburger menu */
+            .nav-menu {
+                width: 100%;
+                left: -100%;
+            }
+
+            .nav-menu.open {
+                left: 0;
+            }
+
+            /* Vertical channel layout with horizontal scrolling per channel */
+            .guide-container {
+                flex-direction: column;
+                height: auto;
+                min-height: calc(100vh - 130px);
+            }
+
+            .guide-content {
+                display: block;
+                overflow: visible;
+                height: auto;
+            }
+
+            /* Hide desktop time header */
+            .time-header {
+                display: none;
+            }
+
+            .programs-grid {
+                display: block !important;
+                background-image: none;
+            }
+
+            /* Mobile channel row - horizontal scrolling */
+            .channel-row {
+                display: flex !important;
+                flex-direction: row !important;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
+                scroll-snap-type: x proximity;
+                padding: 10px;
+                height: 200px;
+                border-bottom: 2px solid var(--border);
+                margin-bottom: 20px;
+                background: var(--bg-secondary);
+                border-radius: 8px;
+            }
+
+            .channel-row::after {
+                display: none;
+            }
+
+            /* Mobile channel header */
+            .channel-row::before {
+                content: attr(data-channel-name);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 15px;
+                font-size: 1.1rem;
+                font-weight: 700;
+                color: var(--text-primary);
+                background: var(--bg-tertiary);
+                border-radius: 6px;
+                margin: 0 12px 15px;
+                border-left: 4px solid var(--accent);
+            }
+
+            /* Scrollbar styling for channel rows */
+            .channel-row {
+                scrollbar-width: thin;
+            }
+
+            .channel-row::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .channel-row::-webkit-scrollbar-track {
+                background: var(--bg-primary);
+                border-radius: 3px;
+            }
+
+            .channel-row::-webkit-scrollbar-thumb {
+                background: var(--accent);
+                border-radius: 3px;
+            }
+
+            /* Program tiles - horizontal layout within channel */
+            .program-tile {
+                position: relative !important;
+                left: auto !important;
+                min-width: 120px;
+                height: 180px;
+                flex-shrink: 0;
+                margin-right: 10px;
+                display: inline-flex;
+                flex-direction: column;
+                scroll-snap-align: start;
+                vertical-align: top;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+
+            .program-tile:first-of-type {
+                margin-left: 15px;
+            }
+
+            .program-tile:last-of-type {
+                margin-right: 15px;
+            }
+
+            /* Touch-friendly program tiles */
+            .program-tile.show-info {
+                transform: scale(1.02);
+                z-index: 50;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 0 20px var(--accent-hover);
+            }
+
+            .program-tile.show-info .quick-info-overlay {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+
+            /* Disable hover effects on mobile */
+            .program-tile:hover {
+                transform: none;
+                z-index: auto;
+                box-shadow: none;
+                filter: none;
+            }
+
+            .program-tile:hover .quick-info-overlay {
+                opacity: 0;
+            }
+
+            .program-tile:hover .program-poster {
+                transform: none;
+            }
+
+            /* Touch-friendly overlay positioning */
+            .quick-info-overlay {
+                top: auto;
+                bottom: calc(100% + 10px);
+                left: 50%;
+                min-width: 260px;
+                max-width: 300px;
+                z-index: 300;
+            }
+
+            .program-tile.overlay-below .quick-info-overlay {
+                top: calc(100% + 10px);
+                bottom: auto;
+            }
+
+            /* Larger touch targets for buttons */
+            .favorite-btn {
+                min-width: 44px !important;
+                min-height: 44px !important;
+                width: 44px !important;
+                height: 44px !important;
+                bottom: 12px !important;
+                right: 12px !important;
+            }
+
+            .favorite-btn i {
+                font-size: 1.1rem !important;
+            }
+
+            /* Program content layout for mobile */
+            .program-content {
+                padding: 10px 12px;
+                justify-content: flex-end;
+            }
+
+            .program-title {
+                font-size: 0.95rem;
+                white-space: normal;
+                overflow: visible;
+                text-overflow: clip;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                line-height: 1.3;
+                margin-bottom: 6px;
+            }
+
+            .program-time {
+                font-size: 0.8rem;
+            }
+
+            .program-info {
+                font-size: 0.75rem;
+            }
+
+            .program-poster {
+                filter: brightness(0.6);
+            }
+
+            /* Current time indicator on mobile */
+            .current-time-indicator {
+                display: none;
+            }
+
+            /* Toast positioning */
+            .toast-container {
+                top: 140px;
+                right: 10px;
+                left: 10px;
+            }
+
+            .toast {
+                min-width: auto;
+                max-width: 100%;
+            }
+
+            /* Movie modal adjustments */
+            .movie-modal-content {
+                width: 100vw;
+                height: 100vh;
+                max-width: none;
+                max-height: none;
+                border-radius: 0;
+            }
+
+            .movie-modal-header {
+                height: 250px;
+            }
+
+            .movie-modal-title {
+                font-size: 1.8rem;
+            }
+
+            .movie-modal-body {
+                padding: 20px 15px;
+            }
+
+            .movie-modal-actions {
+                padding: 0 15px 20px;
+                flex-direction: column;
+            }
+
+            .movie-modal-play-btn {
+                width: 100%;
+                min-height: 50px;
+            }
+
+            .movie-modal-close {
+                width: 52px;
+                height: 52px;
+                font-size: 1.5rem;
+                top: 20px;
+                right: 20px;
+            }
+
+            /* Touch-friendly menu items */
+            .menu-item {
+                padding: 18px 20px;
+                font-size: 1rem;
+                min-height: 56px;
+            }
+
+            .menu-item i {
+                font-size: 1.3rem;
+            }
+
+            /* Badge adjustments */
+            .badge {
+                font-size: 0.65rem;
+                padding: 4px 8px;
+            }
+
+            /* Quick info overlay adjustments */
+            .quick-info-title {
+                font-size: 1rem;
+            }
+
+            .quick-info-summary {
+                font-size: 0.75rem;
+                -webkit-line-clamp: 2;
+            }
+
+            /* Security warning */
+            .security-warning {
+                padding: 12px 15px;
+                font-size: 0.85rem;
+                flex-wrap: wrap;
+            }
+
+            /* Nav buttons */
+            .nav-btn {
+                padding: 10px 16px;
+                font-size: 0.9rem;
+                min-height: 44px;
+            }
+
+            /* Progress bar visibility */
+            .progress-bar {
+                height: 4px;
+            }
+
+            /* Rating and watched indicators */
+            .program-tile > div[style*="position: absolute"] {
+                font-size: 0.8rem !important;
+            }
+
+            /* Ensure all clickable elements are touch-friendly */
+            button, a, .program-tile {
+                min-height: 44px;
+            }
+        }
+
+        /* Very small mobile devices (<400px) */
+        @media screen and (max-width: 399px) {
+            .program-tile {
+                width: 140px !important;
+                height: 170px !important;
+            }
+
+            .header-title {
+                font-size: 1rem;
+            }
+
+            .quick-info-overlay {
+                min-width: 240px;
+            }
         }
     </style>
 </head>
@@ -1248,7 +1716,7 @@
                 </div>
 
                 {% for channel in channels %}
-                <div class="channel-row">
+                <div class="channel-row" data-channel-name="{{ channel.name }}" data-channel-number="{{ channel.number }}">
                     {% for program in channel.programs %}
                     <div class="program-tile" 
                          style="left: {{ (program.start_minute / 30) * 120 }}px; width: {{ (program.duration_minutes / 30) * 120 }}px;"
@@ -1345,6 +1813,14 @@
                 </div>
             </div>
             <div class="movie-modal-actions">
+                <div class="device-selector" id="device-selector" style="margin-bottom: 20px;">
+                    <label for="modal-device-select" style="display: block; margin-bottom: 8px; font-size: 0.9rem; color: var(--text-secondary);">
+                        <i class="fas fa-tv" style="margin-right: 6px;"></i>Playback Device:
+                    </label>
+                    <select id="modal-device-select" class="device-select-dropdown">
+                        <option value="web_player">🌐 Web Player</option>
+                    </select>
+                </div>
                 <button class="movie-modal-play-btn" id="modal-play-btn" onclick="playFromModal()">
                     <i class="fas fa-play"></i>
                     Play Movie
@@ -1457,8 +1933,49 @@
         }
 
         const ENABLE_TIME_OFFSET = {{ 'true' if current_user.enable_time_offset else 'false' }};
+        const IS_TOUCH_DEVICE = 'ontouchstart' in window;
         
         let currentModalData = null;
+
+        function getDeviceIcon(platform) {
+            const icons = {
+                'Roku': '📺',
+                'Android': '📱',
+                'iOS': '🍎',
+                'Xbox': '🎮',
+                'Playstation': '🎮',
+                'Chrome': '🌐',
+                'Safari': '🌐'
+            };
+            return icons[platform] || '📱';
+        }
+
+        function loadUserDevicesForModal() {
+            const select = document.getElementById('modal-device-select');
+            
+            fetch('/api/devices')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.devices.length > 0) {
+                        select.innerHTML = '<option value="web_player">🌐 Web Player</option>';
+                        
+                        data.devices.forEach(device => {
+                            const icon = getDeviceIcon(device.platform);
+                            const option = document.createElement('option');
+                            option.value = device.machine_identifier;
+                            option.textContent = `${icon} ${device.device_name}`;
+                            option.dataset.deviceId = device.id;
+                            if (device.is_default) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to load devices:', err);
+                });
+        }
 
         function openMovieModal(movieId, title, year, duration, genre, summary, posterUrl, rating, contentRating, cast, startMinute, durationMinutes, movieDuration) {
             currentModalData = { movieId, startMinute, durationMinutes, movieDuration };
@@ -1510,6 +2027,8 @@
             
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            
+            loadUserDevicesForModal();
         }
 
         function closeMovieModal() {
@@ -1522,8 +2041,57 @@
         function playFromModal() {
             if (currentModalData) {
                 const { movieId, startMinute, durationMinutes, movieDuration } = currentModalData;
-                playProgram(movieId, startMinute, durationMinutes, movieDuration);
+                const selectedDevice = document.getElementById('modal-device-select').value;
+                
+                if (selectedDevice === 'web_player') {
+                    playProgram(movieId, startMinute, durationMinutes, movieDuration);
+                } else {
+                    playProgramOnDevice(movieId, startMinute, durationMinutes, movieDuration, selectedDevice);
+                }
                 closeMovieModal();
+            }
+        }
+        
+        async function playProgramOnDevice(movieId, startMinute, durationMinutes, movieDuration, deviceIdentifier) {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            
+            let offsetMs = 0;
+            
+            if (ENABLE_TIME_OFFSET) {
+                const minutesIntoProgram = currentMinutes - startMinute;
+                if (minutesIntoProgram > 0 && minutesIntoProgram < durationMinutes) {
+                    const progressPercent = minutesIntoProgram / durationMinutes;
+                    offsetMs = Math.floor(progressPercent * movieDuration * 60 * 1000);
+                }
+            }
+            
+            console.log(`Playing movie ${movieId} on device ${deviceIdentifier} with offset ${offsetMs}ms`);
+            
+            try {
+                const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+                const response = await fetch(`/play/${movieId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ 
+                        offset_ms: offsetMs,
+                        device_id: deviceIdentifier
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('success', 'Playing Now', data.message || 'Movie is now playing on your device');
+                } else {
+                    showToast('error', 'Playback Error', data.message);
+                }
+            } catch (error) {
+                console.error('Error playing on device:', error);
+                showToast('error', 'Error', error.message);
             }
         }
 
@@ -1752,6 +2320,69 @@
             setTimeout(jumpToNow, 100);
             setTimeout(updateOverlayPositions, 100);
         });
+
+        // Touch interaction for mobile - tap to show info, second tap to play
+        let currentlyTappedTile = null;
+        
+        function handleProgramTileTap(event) {
+            // Only handle on touch devices
+            if (!IS_TOUCH_DEVICE) {
+                return;
+            }
+            
+            const tile = event.currentTarget;
+            
+            // Check if clicking favorite button or already has show-info
+            const isFavoriteBtn = event.target.closest('.favorite-btn');
+            if (isFavoriteBtn) {
+                return;
+            }
+            
+            // If clicking the same tile that's already showing info, let it proceed to play
+            if (tile === currentlyTappedTile && tile.classList.contains('show-info')) {
+                // Let the onclick handler run (which opens the modal)
+                return;
+            }
+            
+            // Remove show-info from all other tiles
+            document.querySelectorAll('.program-tile.show-info').forEach(t => {
+                if (t !== tile) {
+                    t.classList.remove('show-info');
+                }
+            });
+            
+            // If this is a new tile, show info overlay and prevent play
+            if (!tile.classList.contains('show-info')) {
+                event.preventDefault();
+                event.stopPropagation();
+                tile.classList.add('show-info');
+                currentlyTappedTile = tile;
+            }
+        }
+        
+        // Close overlay when tapping outside
+        document.addEventListener('touchstart', function(e) {
+            if (IS_TOUCH_DEVICE) {
+                const tile = e.target.closest('.program-tile');
+                if (!tile && currentlyTappedTile) {
+                    currentlyTappedTile.classList.remove('show-info');
+                    currentlyTappedTile = null;
+                }
+            }
+        });
+        
+        // Add touch handlers to all program tiles
+        function initTouchHandlers() {
+            document.querySelectorAll('.program-tile').forEach(tile => {
+                // Remove existing listener if any
+                tile.removeEventListener('click', handleProgramTileTap);
+                // Add new listener
+                tile.addEventListener('click', handleProgramTileTap);
+            });
+        }
+        
+        // Initialize touch handlers on load
+        setTimeout(initTouchHandlers, 100);
 
         document.addEventListener('keydown', function(e) {
             const menu = document.getElementById('nav-menu');

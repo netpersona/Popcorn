@@ -254,6 +254,22 @@
             border-color: var(--accent);
         }
 
+        #plex_client_input {
+            flex: 1;
+            min-width: 0;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        #plex_client_input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
         .theme-preview {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -472,6 +488,53 @@
             justify-content: flex-end;
         }
 
+        .device-item {
+            padding: 15px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .device-item:hover {
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+            transform: translateX(5px);
+        }
+
+        .device-item i {
+            font-size: 2rem;
+            color: var(--accent);
+            width: 40px;
+            text-align: center;
+        }
+
+        .device-info {
+            flex: 1;
+        }
+
+        .device-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            margin-bottom: 4px;
+        }
+
+        .device-details {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .device-select-icon {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
         /* Toggle Switch Styles */
         .toggle-switch {
             position: relative;
@@ -535,6 +598,129 @@
             align-items: center;
             cursor: pointer;
             gap: 15px;
+        }
+
+        .saved-device-card {
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.2s;
+        }
+
+        .saved-device-card.default-device {
+            border-color: var(--accent);
+            background: var(--bg-secondary);
+        }
+
+        .saved-device-card:hover {
+            transform: translateX(3px);
+        }
+
+        .saved-device-icon {
+            font-size: 2rem;
+            color: var(--accent);
+            width: 50px;
+            text-align: center;
+        }
+
+        .saved-device-info {
+            flex: 1;
+        }
+
+        .saved-device-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.05rem;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .default-badge {
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .saved-device-details {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .saved-device-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-default {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-default:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-remove {
+            background: #d32f2f;
+            color: white;
+        }
+
+        .btn-remove:hover {
+            background: #b71c1c;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            opacity: 0.3;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-top: 12px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper label {
+            cursor: pointer;
+            margin: 0;
+            color: var(--text-primary);
         }
     </style>
 </head>
@@ -810,14 +996,16 @@
 
                     <div class="form-group" id="plex_client_field" style="display: {% if current_user.playback_mode == 'client' %}block{% else %}none{% endif %};">
                         <label>Plex Client ID</label>
-                        <input type="text" name="plex_client" class="form-control" 
-                               value="{{ current_user.plex_client or '' }}" 
-                               placeholder="e.g., plex-client-12345">
+                        <div style="display: flex; gap: 10px; align-items: flex-start;">
+                            <input type="text" name="plex_client" id="plex_client_input" class="form-control" 
+                                   value="{{ current_user.plex_client or '' }}" 
+                                   placeholder="e.g., 6d89441adccb7d3506b90954cddc17cf">
+                            <button type="button" class="btn-secondary" id="find_devices_btn" style="white-space: nowrap;">
+                                <i class="fas fa-search"></i> Find Devices
+                            </button>
+                        </div>
                         <div class="help-text">
-                            <strong>To find your Plex Client ID:</strong><br>
-                            • <strong>Roku/Apple TV/etc:</strong> Go to Plex app → Settings → Advanced → Client Identifier<br>
-                            • <strong>Desktop App:</strong> Open Plex → Settings → General → look for Client ID<br>
-                            • Or leave blank to use Web Player
+                            Click "Find Devices" to see your available Plex clients, or enter the Client ID manually. The Plex app must be open on your device.
                         </div>
                     </div>
 
@@ -857,6 +1045,28 @@
                         <i class="fas fa-save"></i> Save Preferences
                     </button>
                 </form>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <div class="card-header">
+                <h4><i class="fas fa-mobile-alt"></i> My Devices</h4>
+            </div>
+            <div class="card-body">
+                <p style="margin-bottom: 20px; color: var(--text-secondary);">
+                    Save your Plex devices for quick playback selection
+                </p>
+
+                <button type="button" class="btn-primary" onclick="openSaveDeviceModal()" style="margin-bottom: 20px;">
+                    <i class="fas fa-search"></i> Find Devices
+                </button>
+
+                <div id="saved-devices-list">
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading devices...</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -986,6 +1196,66 @@
         </div>
     </div>
 
+    <div id="devices-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-tv"></i> Available Plex Clients</h3>
+                <button class="close-btn" onclick="closeDevicesModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="devices-loading" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Searching for Plex clients...</p>
+                    <p style="font-size: 0.9rem; margin-top: 10px;">Make sure the Plex app is open on your device.</p>
+                </div>
+                
+                <div id="devices-list" style="display: none;">
+                    <!-- Devices will be populated here -->
+                </div>
+                
+                <div id="devices-error" style="display: none; text-align: center; padding: 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: var(--accent); margin-bottom: 10px;"></i>
+                    <p id="devices-error-message" style="color: var(--text-secondary);"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDevicesModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-device-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-mobile-alt"></i> Save Plex Device</h3>
+                <button class="close-btn" onclick="closeSaveDeviceModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="save-devices-loading" style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                    <p>Searching for Plex clients...</p>
+                    <p style="font-size: 0.9rem; margin-top: 10px;">Make sure the Plex app is open on your device.</p>
+                </div>
+                
+                <div id="save-devices-list" style="display: none;">
+                    <!-- Devices will be populated here -->
+                </div>
+                
+                <div id="save-devices-error" style="display: none; text-align: center; padding: 20px;">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: var(--accent); margin-bottom: 10px;"></i>
+                    <p id="save-devices-error-message" style="color: var(--text-secondary);"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeSaveDeviceModal()">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function updateUserGlowDisplay(value) {
             const label = document.querySelector('label div span');
@@ -1084,10 +1354,379 @@
             }
         }
         
+        // Device discovery functions
+        async function findDevices() {
+            const modal = document.getElementById('devices-modal');
+            const loading = document.getElementById('devices-loading');
+            const devicesList = document.getElementById('devices-list');
+            const error = document.getElementById('devices-error');
+            
+            // Show modal with loading state
+            modal.style.display = 'flex';
+            loading.style.display = 'block';
+            devicesList.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/clients');
+                const data = await response.json();
+                
+                if (data.success && data.clients && data.clients.length > 0) {
+                    // Show devices list
+                    loading.style.display = 'none';
+                    devicesList.style.display = 'block';
+                    
+                    // Build device list HTML
+                    let html = '';
+                    data.clients.forEach(client => {
+                        const icon = getDeviceIcon(client.product, client.platform);
+                        html += `
+                            <div class="device-item" onclick="selectDevice('${client.identifier}', '${client.name.replace(/'/g, "\\'")}')">
+                                <i class="${icon}"></i>
+                                <div class="device-info">
+                                    <div class="device-name">${client.name}</div>
+                                    <div class="device-details">${client.product} • ${client.platform}</div>
+                                </div>
+                                <i class="fas fa-chevron-right device-select-icon"></i>
+                            </div>
+                        `;
+                    });
+                    devicesList.innerHTML = html;
+                } else {
+                    // Show error
+                    loading.style.display = 'none';
+                    error.style.display = 'block';
+                    document.getElementById('devices-error-message').innerHTML = `
+                        <strong>No Plex clients found.</strong><br><br>
+                        Make sure:<br>
+                        • The Plex app is <strong>open</strong> on your device (Roku, TV, etc.)<br>
+                        • Your device is connected to the same network<br>
+                        • You're using a <strong>local Plex server URL</strong> (not remote)<br><br>
+                        Need help? Check the troubleshooting guide in the documentation.
+                    `;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                document.getElementById('devices-error-message').innerHTML = `
+                    <strong>Failed to search for devices.</strong><br><br>
+                    Error: ${error.message}<br><br>
+                    Please check your Plex server connection.
+                `;
+            }
+        }
+        
+        function closeDevicesModal() {
+            document.getElementById('devices-modal').style.display = 'none';
+        }
+        
+        function selectDevice(identifier, name) {
+            // Fill the input with the device identifier
+            document.getElementById('plex_client_input').value = identifier;
+            
+            // Show success toast
+            showToast(`Selected: ${name}`, 'success');
+            
+            // Close modal
+            closeDevicesModal();
+        }
+        
+        function getDeviceIcon(product, platform) {
+            // Return appropriate icon based on device type
+            const productLower = product.toLowerCase();
+            const platformLower = platform.toLowerCase();
+            
+            if (productLower.includes('roku') || platformLower.includes('roku')) {
+                return 'fas fa-tv';
+            } else if (productLower.includes('android') || platformLower.includes('android')) {
+                return 'fab fa-android';
+            } else if (productLower.includes('ios') || productLower.includes('iphone') || productLower.includes('ipad')) {
+                return 'fab fa-apple';
+            } else if (productLower.includes('chrome') || productLower.includes('firefox') || productLower.includes('safari')) {
+                return 'fas fa-globe';
+            } else if (productLower.includes('desktop') || productLower.includes('windows') || productLower.includes('mac')) {
+                return 'fas fa-desktop';
+            } else if (productLower.includes('playstation') || productLower.includes('xbox')) {
+                return 'fas fa-gamepad';
+            } else {
+                return 'fas fa-tv';
+            }
+        }
+        
+        function showToast(message, type) {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#4CAF50' : '#d32f2f'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            document.body.appendChild(toast);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Add event listener for Find Devices button
+        document.addEventListener('DOMContentLoaded', function() {
+            const findDevicesBtn = document.getElementById('find_devices_btn');
+            if (findDevicesBtn) {
+                findDevicesBtn.addEventListener('click', findDevices);
+            }
+            
+            // Load saved devices on page load
+            loadSavedDevices();
+        });
+
+        // Saved Devices Management Functions
+        async function loadSavedDevices() {
+            const listContainer = document.getElementById('saved-devices-list');
+            
+            try {
+                const response = await fetch('/api/devices');
+                const data = await response.json();
+                
+                if (data.success && data.devices && data.devices.length > 0) {
+                    let html = '';
+                    data.devices.forEach(device => {
+                        const icon = getDeviceIcon(device.product, device.platform);
+                        const isDefault = device.is_default;
+                        
+                        html += `
+                            <div class="saved-device-card ${isDefault ? 'default-device' : ''}">
+                                <i class="${icon} saved-device-icon"></i>
+                                <div class="saved-device-info">
+                                    <div class="saved-device-name">
+                                        ${device.device_name}
+                                        ${isDefault ? '<span class="default-badge"><i class="fas fa-star"></i> Default</span>' : ''}
+                                    </div>
+                                    <div class="saved-device-details">${device.product} • ${device.platform}</div>
+                                </div>
+                                <div class="saved-device-actions">
+                                    ${!isDefault ? `<button class="btn-small btn-default" onclick="setDefaultDevice(${device.id})">
+                                        <i class="fas fa-star"></i> Set Default
+                                    </button>` : ''}
+                                    <button class="btn-small btn-remove" onclick="removeDevice(${device.id}, '${device.device_name.replace(/'/g, "\\'")}')">
+                                        <i class="fas fa-trash"></i> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    listContainer.innerHTML = html;
+                } else {
+                    listContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-mobile-alt"></i>
+                            <p>No saved devices yet.</p>
+                            <p style="font-size: 0.9rem; margin-top: 10px;">Click "Find Devices" to discover and save your Plex clients.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                listContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Failed to load devices</p>
+                        <p style="font-size: 0.9rem; margin-top: 10px;">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function setDefaultDevice(deviceId) {
+            try {
+                const response = await fetch(`/api/devices/${deviceId}/default`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Default device updated successfully', 'success');
+                    loadSavedDevices();
+                } else {
+                    showToast(data.message || 'Failed to set default device', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to set default device: ' + error.message, 'error');
+            }
+        }
+
+        async function removeDevice(deviceId, deviceName) {
+            if (!confirm(`Are you sure you want to remove "${deviceName}"?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/devices/${deviceId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Device removed successfully', 'success');
+                    loadSavedDevices();
+                } else {
+                    showToast(data.message || 'Failed to remove device', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to remove device: ' + error.message, 'error');
+            }
+        }
+
+        // Save Device Modal Functions
+        async function openSaveDeviceModal() {
+            const modal = document.getElementById('save-device-modal');
+            const loading = document.getElementById('save-devices-loading');
+            const devicesList = document.getElementById('save-devices-list');
+            const error = document.getElementById('save-devices-error');
+            
+            modal.style.display = 'flex';
+            loading.style.display = 'block';
+            devicesList.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/clients');
+                const data = await response.json();
+                
+                if (data.success && data.clients && data.clients.length > 0) {
+                    loading.style.display = 'none';
+                    devicesList.style.display = 'block';
+                    
+                    let html = '';
+                    data.clients.forEach(client => {
+                        const icon = getDeviceIcon(client.product, client.platform);
+                        html += `
+                            <div class="device-item" style="cursor: default;">
+                                <i class="${icon}"></i>
+                                <div class="device-info">
+                                    <div class="device-name">${client.name}</div>
+                                    <div class="device-details">${client.product} • ${client.platform}</div>
+                                </div>
+                                <button class="btn-small btn-default" onclick="showSaveDeviceForm('${client.identifier}', '${client.name.replace(/'/g, "\\'")}', '${client.platform.replace(/'/g, "\\'")}', '${client.product.replace(/'/g, "\\'")}')">
+                                    <i class="fas fa-save"></i> Save
+                                </button>
+                            </div>
+                        `;
+                    });
+                    devicesList.innerHTML = html;
+                } else {
+                    loading.style.display = 'none';
+                    error.style.display = 'block';
+                    document.getElementById('save-devices-error-message').innerHTML = `
+                        <strong>No Plex clients found.</strong><br><br>
+                        Make sure:<br>
+                        • The Plex app is <strong>open</strong> on your device (Roku, TV, etc.)<br>
+                        • Your device is connected to the same network<br>
+                        • You're using a <strong>local Plex server URL</strong> (not remote)<br><br>
+                        Need help? Check the troubleshooting guide in the documentation.
+                    `;
+                }
+            } catch (error) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                document.getElementById('save-devices-error-message').innerHTML = `
+                    <strong>Failed to search for devices.</strong><br><br>
+                    Error: ${error.message}<br><br>
+                    Please check your Plex server connection.
+                `;
+            }
+        }
+
+        function closeSaveDeviceModal() {
+            document.getElementById('save-device-modal').style.display = 'none';
+        }
+
+        async function showSaveDeviceForm(identifier, name, platform, product) {
+            const devicesList = document.getElementById('save-devices-list');
+            const icon = getDeviceIcon(product, platform);
+            
+            devicesList.innerHTML = `
+                <div style="padding: 10px;">
+                    <div class="device-item" style="cursor: default; margin-bottom: 20px;">
+                        <i class="${icon}"></i>
+                        <div class="device-info">
+                            <div class="device-name">${name}</div>
+                            <div class="device-details">${product} • ${platform}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="set-as-default-checkbox">
+                        <label for="set-as-default-checkbox">Set as default device</label>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn-primary" onclick="saveDevice('${identifier}', '${name.replace(/'/g, "\\'")}', '${platform.replace(/'/g, "\\'")}', '${product.replace(/'/g, "\\'")}')">
+                            <i class="fas fa-save"></i> Save Device
+                        </button>
+                        <button class="btn-secondary" onclick="openSaveDeviceModal()">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function saveDevice(identifier, name, platform, product) {
+            const setAsDefault = document.getElementById('set-as-default-checkbox').checked;
+            
+            try {
+                const response = await fetch('/api/devices', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        device_name: name,
+                        machine_identifier: identifier,
+                        platform: platform,
+                        product: product,
+                        set_as_default: setAsDefault
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('Device saved successfully', 'success');
+                    closeSaveDeviceModal();
+                    loadSavedDevices();
+                } else {
+                    showToast(data.message || 'Failed to save device', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to save device: ' + error.message, 'error');
+            }
+        }
+        
         window.onclick = function(event) {
-            const modal = document.getElementById('upload-modal');
-            if (event.target === modal) {
+            const uploadModal = document.getElementById('upload-modal');
+            const devicesModal = document.getElementById('devices-modal');
+            const saveDeviceModal = document.getElementById('save-device-modal');
+            
+            if (event.target === uploadModal) {
                 closeUploadModal();
+            }
+            if (event.target === devicesModal) {
+                closeDevicesModal();
+            }
+            if (event.target === saveDeviceModal) {
+                closeSaveDeviceModal();
             }
         }
         

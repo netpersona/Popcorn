@@ -234,6 +234,26 @@ class MovieFavorite(Base):
     def __repr__(self):
         return f"<MovieFavorite(user_id={self.user_id}, movie_id={self.movie_id})>"
 
+class UserDevice(Base):
+    __tablename__ = 'user_devices'
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    device_name = Column(String, nullable=False)
+    machine_identifier = Column(String, nullable=False)
+    platform = Column(String)
+    product = Column(String)
+    is_default = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = relationship('User')
+    
+    __table_args__ = (UniqueConstraint('user_id', 'machine_identifier', name='_user_device_uc'),)
+    
+    def __repr__(self):
+        return f"<UserDevice(user_id={self.user_id}, device_name='{self.device_name}', platform='{self.platform}')>"
+
 def init_db(db_path='popcorn.db'):
     engine = create_engine(f'sqlite:///{db_path}')
     Base.metadata.create_all(engine)

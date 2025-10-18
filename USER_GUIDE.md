@@ -516,24 +516,189 @@ To update your password:
    docker logs popcorn
    ```
 
-### Problem: "Client Not Found" When Playing Movies
+### Problem: "No Plex Clients Found" / Client Playback Not Working
 
-**Symptoms:** Error message about Plex client not available
+**Symptoms:** 
+- Error: "No Plex clients found. Make sure a Plex player is running..."
+- Error: "Client not found. Available: []"
+- Playback fails even though device is visible in Plex web interface
 
-**Solutions:**
-1. Make sure your Plex client (Roku, etc.) is powered on
-2. Verify the client is connected to the same Plex account
-3. Check available clients:
-   - Go to Settings → View Available Clients
-   - Find the exact name of your client
-4. Update `PLEX_CLIENT` environment variable with correct name:
-   ```bash
-   docker rm -f popcorn
-   docker run -d --name popcorn -p 5000:5000 \
-     -e PLEX_CLIENT="Correct Client Name" \
-     ... (other env vars) \
-     popcorn
+**Root Cause:** Popcorn cannot discover your Plex playback devices via the local network API.
+
+#### Solution 1: Use Correct Local PLEX_URL ⭐ MOST COMMON FIX
+
+**The Problem:** Using a public/remote Plex URL prevents local client discovery.
+
+```bash
+# ✅ CORRECT - Local network IP
+PLEX_URL=http://192.168.1.100:32400
+PLEX_URL=http://10.0.0.25:32400
+
+# ❌ WRONG - Public IP, domain, or remote URL
+PLEX_URL=http://66.241.174.242:19019
+PLEX_URL=https://plex.mydomain.com:32400
+```
+
+**Why:** The Plex `/clients` API endpoint only discovers devices on the same local network. Remote/public URLs use Plex's cloud relay which doesn't expose local client information.
+
+**How to Find Your Local Plex IP:**
+1. On your Plex server machine, run: `ip addr` (Linux) or `ipconfig` (Windows)
+2. Look for your local IP (usually starts with `192.168.x.x` or `10.0.x.x`)
+3. Plex default port is `32400`
+
+**Verify it works:**
+```bash
+# Should return XML listing your clients (while Plex app is open on device)
+curl "http://YOUR_LOCAL_IP:32400/clients?X-Plex-Token=YOUR_TOKEN"
+```
+
+If you get `<MediaContainer size="0">` (empty), you're using the wrong URL or have other issues below.
+
+#### Solution 2: Enable Host Network Mode (Docker/Unraid)
+
+**The Problem:** Bridge network mode blocks GDM (Good Day Mate) discovery protocol.
+
+**For Docker:**
+```bash
+docker run -d --name popcorn \
+  --network host \  # Add this line
+  -e PLEX_URL="http://192.168.1.100:32400" \
+  -e PLEX_TOKEN="your-token" \
+  popcorn
+```
+
+**For Docker Compose:**
+```yaml
+services:
+  popcorn:
+    network_mode: host  # Add this line
+```
+
+**For Unraid:**
+1. Edit Popcorn container
+2. Change **Network Type** from `Bridge` to `Host`
+3. Remove port mappings (not needed in host mode)
+4. Save and restart
+
+**Why:** Bridge mode isolates containers from multicast network broadcasts that Plex uses to discover local devices.
+
+**Important:** Your Plex server container may also need host mode if it's in bridge mode.
+
+#### Solution 3: Whitelist Plex Domain (Pi-hole / DNS Ad-Blockers)
+
+**The Problem:** DNS ad-blockers may block Plex's companion app service.
+
+**If using Pi-hole, AdGuard Home, or similar DNS ad-blockers:**
+
+1. **Whitelist this domain:**
    ```
+   config.claspws.tv
+   ```
+
+2. **In Pi-hole:**
+   - Go to Whitelist
+   - Add exact domain: `config.claspws.tv`
+   - Save changes
+
+3. **Restart Plex app** on your playback device
+
+**Why:** `config.claspws.tv` is Plex's companion app service used for device authentication and discovery. Blocking it prevents proper client advertisement.
+
+#### Solution 4: Ensure Plex App is Running on Target Device
+
+**The Problem:** Devices only advertise themselves when the Plex app is actively running.
+
+**Requirements:**
+- ✅ Plex app **must be open** on your Roku/TV/device
+- ✅ Can be on home screen (doesn't need to be playing)
+- ❌ Won't work if app is closed/background
+
+**Test:**
+1. Open Plex app on your Roku/device
+2. Leave it on the home screen
+3. Check if it appears in API:
+   ```bash
+   curl "http://YOUR_LOCAL_IP:32400/clients?X-Plex-Token=YOUR_TOKEN"
+   ```
+4. Device should appear in XML output
+
+#### Solution 5: Use Device UUID Instead of Name
+
+**The Problem:** Multiple devices may have the same name, causing ambiguity.
+
+**Get Your Device's Unique UUID:**
+
+Visit: `https://plex.tv/api/resources.xml?X-Plex-Token=YOUR_TOKEN`
+
+Find your device and copy its `clientIdentifier`:
+```xml
+<Device name="Roku Streaming Stick 4K" 
+        clientIdentifier="6d89441adccb7d3506b90954cddc17cf"
+        product="Plex for Roku" />
+```
+
+**In Popcorn:**
+1. Go to **Profile** → **Playback Settings**
+2. Set **Plex Client ID** to the UUID:
+   ```
+   6d89441adccb7d3506b90954cddc17cf
+   ```
+3. Save changes
+
+**Why UUID is better:**
+- Guarantees targeting the exact device
+- Works even if you rename the device
+- Prevents conflicts with same-named devices
+
+#### Solution 6: Cloud vs Local Deployment
+
+**IMPORTANT:** Client playback ONLY works on your **local network**.
+
+**This WORKS:**
+- ✅ Popcorn running on Unraid (local server)
+- ✅ Popcorn in Docker on home PC/NAS
+- ✅ Popcorn running natively on local machine
+
+**This DOES NOT WORK:**
+- ❌ Popcorn hosted in cloud (Replit, Heroku, DigitalOcean, etc.)
+- ❌ Accessing Popcorn over VPN from outside network
+
+**Why:** Cloud-hosted apps cannot reach your home network's private IP addresses where your Roku/clients live. They can connect to your Plex server (if public), but not to local playback devices.
+
+**Alternative:** Use **Web Player mode** instead:
+1. Go to **Profile** → **Playback Settings**
+2. Change **Playback Mode** to **"Web Player"**
+3. Movies will open in browser instead of pushing to device
+4. Works from anywhere (cloud or local)
+
+#### Quick Diagnostic Checklist
+
+Run through this checklist:
+
+- [ ] **PLEX_URL** uses local IP (`http://192.168.x.x:32400` or `http://10.0.x.x:32400`)
+- [ ] Docker network mode is **Host** (not Bridge) for both Plex and Popcorn
+- [ ] Whitelisted `config.claspws.tv` if using Pi-hole/ad-blocker
+- [ ] **Plex app is open** on target device right now
+- [ ] Target device signed into **same Plex account** as server
+- [ ] Popcorn running on **local network** (not cloud)
+- [ ] Using device **UUID** (not just name) in Profile settings
+
+**Test your setup:**
+```bash
+# This should return XML with your devices listed
+curl "http://YOUR_LOCAL_PLEX_IP:32400/clients?X-Plex-Token=YOUR_TOKEN"
+```
+
+If still empty, check Plex server logs for GDM/discovery errors.
+
+#### Still Not Working? Use Web Player Mode
+
+If client discovery continues to fail:
+
+1. **Profile** → **Playback Settings**
+2. Change to **"Web Player"** mode
+3. Movies open in browser (works everywhere)
+4. No client discovery needed
 
 ### Problem: Movies Not Playing (Deep Link Issues)
 

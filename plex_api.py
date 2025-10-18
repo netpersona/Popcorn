@@ -141,8 +141,8 @@ class PlexAPI:
                     client.playMedia(movie)
                     logger.info(f"Sent playMedia command to {client.title}")
                 except Exception as e:
-                    logger.error(f"Failed to start playback: {e}", exc_info=True)
-                    return False, "Playback failed. Please check your Plex client and try again.", 0
+                    logger.error(f"Failed to start playback: {e}")
+                    return False, f"Playback failed: {str(e)}. Make sure your Plex client is responding.", 0
                 
                 if offset_ms > 0:
                     import time
@@ -171,7 +171,12 @@ class PlexAPI:
     def get_available_clients(self):
         try:
             clients = self.plex.clients()
-            return [{'name': c.title, 'product': c.product} for c in clients]
+            return [{
+                'name': c.title, 
+                'product': c.product,
+                'identifier': c.machineIdentifier,
+                'platform': c.platform if hasattr(c, 'platform') else 'Unknown'
+            } for c in clients]
         except Exception as e:
             logger.error(f"Error fetching clients: {e}")
             return []

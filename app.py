@@ -523,12 +523,10 @@ def check_plex_pin(pin_id):
     has_access, error_msg = PlexAPI.verify_library_access(settings.plex_url, auth_token)
     
     if not has_access:
-        # Optionally log the detailed error_msg for server-side debugging
-        logger.warning(f"User library access failed: {error_msg}")
         return jsonify({
             'success': False,
             'status': 'no_library_access',
-            'message': 'You do not have access to this Plex server.'
+            'message': f'You do not have access to this Plex server. {error_msg or ""}'
         })
     
     # Smart merge logic: plex_id → email → create new
@@ -935,11 +933,19 @@ def play(movie_id):
     if not movie:
         return jsonify({'success': False, 'message': 'Movie not found'})
     
-    # Use user's playback preferences
-    playback_mode = current_user.playback_mode if current_user.playback_mode else 'web_player'
-    client_id = current_user.plex_client if current_user.plex_client else None
-    
+    # Check if device_id was passed in request (from device selector dropdown)
+    device_id = request.json.get('device_id') if request.is_json else None
     offset_ms = request.json.get('offset_ms', 0) if request.is_json else 0
+    
+    # Determine playback mode and client
+    if device_id and device_id != 'web_player':
+        # User selected a specific device from dropdown
+        playback_mode = 'client_playback'
+        client_id = device_id  # device_id is the machine_identifier
+    else:
+        # Fall back to user's saved preferences or web player
+        playback_mode = current_user.playback_mode if current_user.playback_mode else 'web_player'
+        client_id = current_user.plex_client if current_user.plex_client else None
     
     success, result, offset_min = plex_api.play_movie(movie.plex_id, offset_ms=offset_ms, playback_mode=playback_mode, client_id=client_id)
     
@@ -1088,10 +1094,9 @@ def test_plex_connection():
             'message': f'Successfully connected to: {server_name}'
         })
     except Exception as e:
-        logging.exception(f'Error testing Plex connection for user {current_user.id}')
         return jsonify({
             'success': False,
-            'message': 'Connection failed: An internal error occurred.'
+            'message': f'Connection failed: {str(e)}'
         })
 
 @app.route('/api/clients')
@@ -1102,6 +1107,121 @@ def get_clients():
     
     clients = plex_api.get_available_clients()
     return jsonify({'success': True, 'clients': clients})
+
+@app.route('/api/devices', methods=['GET'])
+@login_required
+def get_user_devices():
+    """Get all saved devices for current user"""
+    from models import UserDevice
+    session = get_session()
+    
+    devices = session.query(UserDevice).filter_by(user_id=current_user.id).order_by(UserDevice.is_default.desc(), UserDevice.device_name).all()
+    
+    device_list = [{
+        'id': d.id,
+        'device_name': d.device_name,
+        'machine_identifier': d.machine_identifier,
+        'platform': d.platform,
+        'product': d.product,
+        'is_default': d.is_default
+    } for d in devices]
+    
+    return jsonify({'success': True, 'devices': device_list})
+
+@app.route('/api/devices', methods=['POST'])
+@login_required
+def save_device():
+    """Save a new device for current user"""
+    from models import UserDevice
+    session = get_session()
+    
+    data = request.get_json()
+    device_name = data.get('device_name')
+    machine_identifier = data.get('machine_identifier')
+    platform = data.get('platform', '')
+    product = data.get('product', '')
+    set_as_default = data.get('is_default', False)
+    
+    if not device_name or not machine_identifier:
+        return jsonify({'success': False, 'message': 'Device name and machine identifier required'}), 400
+    
+    # Check if device already exists for this user
+    existing = session.query(UserDevice).filter_by(
+        user_id=current_user.id,
+        machine_identifier=machine_identifier
+    ).first()
+    
+    if existing:
+        return jsonify({'success': False, 'message': 'Device already saved'}), 400
+    
+    # If setting as default, unset other defaults
+    if set_as_default:
+        session.query(UserDevice).filter_by(user_id=current_user.id).update({'is_default': False})
+    
+    # Create new device
+    new_device = UserDevice(
+        user_id=current_user.id,
+        device_name=device_name,
+        machine_identifier=machine_identifier,
+        platform=platform,
+        product=product,
+        is_default=set_as_default
+    )
+    
+    session.add(new_device)
+    session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Device saved successfully',
+        'device': {
+            'id': new_device.id,
+            'device_name': new_device.device_name,
+            'machine_identifier': new_device.machine_identifier,
+            'platform': new_device.platform,
+            'product': new_device.product,
+            'is_default': new_device.is_default
+        }
+    })
+
+@app.route('/api/devices/<int:device_id>/default', methods=['POST'])
+@login_required
+def set_default_device(device_id):
+    """Set a device as default for current user"""
+    from models import UserDevice
+    session = get_session()
+    
+    # Get the device
+    device = session.query(UserDevice).filter_by(id=device_id, user_id=current_user.id).first()
+    
+    if not device:
+        return jsonify({'success': False, 'message': 'Device not found'}), 404
+    
+    # Unset all defaults
+    session.query(UserDevice).filter_by(user_id=current_user.id).update({'is_default': False})
+    
+    # Set this device as default
+    device.is_default = True
+    session.commit()
+    
+    return jsonify({'success': True, 'message': 'Default device updated'})
+
+@app.route('/api/devices/<int:device_id>', methods=['DELETE'])
+@login_required
+def delete_device(device_id):
+    """Delete a saved device"""
+    from models import UserDevice
+    session = get_session()
+    
+    device = session.query(UserDevice).filter_by(id=device_id, user_id=current_user.id).first()
+    
+    if not device:
+        return jsonify({'success': False, 'message': 'Device not found'}), 404
+    
+    session.delete(device)
+    session.commit()
+    
+    return jsonify({'success': True, 'message': 'Device deleted'})
 
 @app.route('/api/deeplink/<int:movie_id>')
 @login_required
