@@ -46,8 +46,19 @@ class UpdateManager:
             logger.debug(f"Docker detection check failed: {e}")
             return False
         
-    def get_current_commit(self):
-        """Get the current git commit hash"""
+    def get_current_version(self):
+        """Get the current version from VERSION file or git"""
+        # Try VERSION file first (works on Replit and other platforms)
+        version_file = Path('VERSION')
+        if version_file.exists():
+            try:
+                version = version_file.read_text().strip()
+                if version:
+                    return version
+            except Exception as e:
+                logger.warning(f"Could not read VERSION file: {e}")
+        
+        # Fallback to git commit hash (for development)
         try:
             commit = subprocess.check_output(
                 ['git', 'rev-parse', 'HEAD'],
@@ -78,9 +89,38 @@ class UpdateManager:
             logger.error(f"Failed to check for updates: {e}")
             return None
     
+    def compare_versions(self, current, latest):
+        """Compare semantic versions (e.g., '2.3.0' vs 'v2.0.1')"""
+        try:
+            # Strip 'v' prefix if present
+            current_clean = current.lstrip('v') if current else '0.0.0'
+            latest_clean = latest.lstrip('v') if latest else '0.0.0'
+            
+            # Parse version parts
+            current_parts = [int(x) for x in current_clean.split('.')]
+            latest_parts = [int(x) for x in latest_clean.split('.')]
+            
+            # Pad to same length
+            while len(current_parts) < 3:
+                current_parts.append(0)
+            while len(latest_parts) < 3:
+                latest_parts.append(0)
+            
+            # Compare: return True if latest > current
+            for i in range(3):
+                if latest_parts[i] > current_parts[i]:
+                    return True
+                elif latest_parts[i] < current_parts[i]:
+                    return False
+            
+            return False  # Versions are equal
+        except:
+            # Fallback to string comparison for non-semantic versions (git hashes)
+            return current != latest and current != 'unknown'
+    
     def check_for_updates(self):
         """Compare local version with latest GitHub release"""
-        current = self.get_current_commit()
+        current = self.get_current_version()
         latest_release = self.get_latest_release()
         is_docker = self.is_running_in_docker()
         
@@ -91,14 +131,15 @@ class UpdateManager:
                 'is_docker': is_docker
             }
         
-        latest_commit = latest_release['commit_sha']
-        if isinstance(latest_commit, str):
-            latest_commit = latest_commit[:7]
+        latest_version = latest_release['tag_name']
+        
+        # Use semantic version comparison if both are version numbers
+        is_update_available = self.compare_versions(current, latest_version)
         
         return {
-            'available': current != latest_commit and current != 'unknown',
+            'available': is_update_available,
             'current_version': current,
-            'latest_version': latest_release['tag_name'],
+            'latest_version': latest_version,
             'latest_version_name': latest_release['name'],
             'release_notes': latest_release['body'],
             'published_at': latest_release['published_at'],

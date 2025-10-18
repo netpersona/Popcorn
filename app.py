@@ -1319,8 +1319,8 @@ def check_for_updates():
     
     if not version_record:
         version_record = AppVersion(
-            current_version='1.0.0',
-            current_commit=UpdateManager().get_current_commit()
+            current_version=UpdateManager().get_current_version(),
+            current_commit=UpdateManager().get_current_version()
         )
         session.add(version_record)
         session.commit()
