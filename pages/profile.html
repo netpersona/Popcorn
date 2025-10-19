@@ -1405,12 +1405,12 @@
                         Need help? Check the troubleshooting guide in the documentation.
                     `;
                 }
-            } catch (error) {
+            } catch (err) {
                 loading.style.display = 'none';
                 error.style.display = 'block';
                 document.getElementById('devices-error-message').innerHTML = `
                     <strong>Failed to search for devices.</strong><br><br>
-                    Error: ${error.message}<br><br>
+                    Error: ${err.message}<br><br>
                     Please check your Plex server connection.
                 `;
             }
@@ -1433,8 +1433,9 @@
         
         function getDeviceIcon(product, platform) {
             // Return appropriate icon based on device type
-            const productLower = product.toLowerCase();
-            const platformLower = platform.toLowerCase();
+            // Safely handle null/undefined values
+            const productLower = (product || '').toLowerCase();
+            const platformLower = (platform || '').toLowerCase();
             
             if (productLower.includes('roku') || platformLower.includes('roku')) {
                 return 'fas fa-tv';
@@ -1636,12 +1637,12 @@
                         Need help? Check the troubleshooting guide in the documentation.
                     `;
                 }
-            } catch (error) {
+            } catch (err) {
                 loading.style.display = 'none';
                 error.style.display = 'block';
                 document.getElementById('save-devices-error-message').innerHTML = `
                     <strong>Failed to search for devices.</strong><br><br>
-                    Error: ${error.message}<br><br>
+                    Error: ${err.message}<br><br>
                     Please check your Plex server connection.
                 `;
             }
