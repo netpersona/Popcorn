@@ -660,7 +660,7 @@ Find your device and copy its `clientIdentifier`:
 - ✅ Popcorn running natively on local machine
 
 **This DOES NOT WORK:**
-- ❌ Popcorn hosted in cloud (Replit, Heroku, DigitalOcean, etc.)
+- ❌ Popcorn hosted in cloud (Heroku, DigitalOcean, etc.)
 - ❌ Accessing Popcorn over VPN from outside network
 
 **Why:** Cloud-hosted apps cannot reach your home network's private IP addresses where your Roku/clients live. They can connect to your Plex server (if public), but not to local playback devices.

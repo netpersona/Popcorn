@@ -115,6 +115,15 @@
         </div>
     </nav>
 
+    {% if config.VOLUME_WARNING %}
+    <div class="alert alert-danger alert-dismissible fade show mx-3" role="alert" style="position: sticky; top: 0; z-index: 1000;">
+        <i class="fas fa-exclamation-triangle"></i>
+        <strong>Data Persistence Warning:</strong> Your database is not properly mapped to a host directory. You will lose all data when the container is updated or recreated.
+        <br><small>Add volume mapping when running the container: <code>docker run -v /path/on/host:/data ...</code></small>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
     <div class="container">
         {% block content %}{% endblock %}
     </div>

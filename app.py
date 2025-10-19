@@ -116,9 +116,12 @@ scheduler = None
 def run_migrations():
     """Run database migrations for new columns and tables"""
     import sqlite3
+    from models import get_db_path
     
     logger.info("Running database migrations...")
-    conn = sqlite3.connect('popcorn.db')
+    db_path = get_db_path()
+    logger.info(f"Using database: {db_path}")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
     # Add channel numbers to settings table if it doesn't exist
@@ -274,6 +277,19 @@ def initialize_app():
     global db_session, plex_api, scheduler
     
     logger.info("Initializing Popcorn app...")
+    
+    # Check if data volume is properly mounted
+    from models import is_volume_properly_mounted
+    is_mounted, warning_msg = is_volume_properly_mounted()
+    app.config['VOLUME_MOUNTED'] = is_mounted
+    app.config['VOLUME_WARNING'] = warning_msg
+    
+    if not is_mounted and warning_msg:
+        logger.error("=" * 80)
+        logger.error(warning_msg)
+        logger.error("Add volume mapping when running container:")
+        logger.error("  docker run -v /path/on/host:/data ...")
+        logger.error("=" * 80)
     
     # Run migrations before initializing database
     run_migrations()
@@ -1102,11 +1118,19 @@ def test_plex_connection():
 @app.route('/api/clients')
 @login_required
 def get_clients():
-    if not plex_api:
-        return jsonify({'success': False, 'clients': []})
+    logger.info(f"API /api/clients called by user {current_user.username}")
     
-    clients = plex_api.get_available_clients()
-    return jsonify({'success': True, 'clients': clients})
+    if not plex_api:
+        logger.warning("Plex API is None - cannot get clients")
+        return jsonify({'success': False, 'clients': [], 'error': 'Plex API not initialized'})
+    
+    try:
+        clients = plex_api.get_available_clients()
+        logger.info(f"Found {len(clients)} Plex clients: {[c['name'] for c in clients]}")
+        return jsonify({'success': True, 'clients': clients})
+    except Exception as e:
+        logger.error(f"Error getting clients: {e}", exc_info=True)
+        return jsonify({'success': False, 'clients': [], 'error': str(e)})
 
 @app.route('/api/devices', methods=['GET'])
 @login_required

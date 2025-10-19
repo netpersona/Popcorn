@@ -74,11 +74,13 @@ When installing Popcorn on Unraid, you **must** configure these settings:
 - **Custom:** Change to any available port (e.g., `8080`, `7000`)
 - **Access:** `http://UNRAID_IP:PORT`
 
-### 6. AppData Path (Optional)
+### 6. AppData Path (IMPORTANT - Must Be Configured)
 - **Field:** `AppData`
-- **Description:** Where Popcorn stores its database and files
+- **Description:** Where Popcorn stores its database and configuration files
 - **Default:** `/mnt/user/appdata/popcorn`
-- **Note:** Usually doesn't need to be changed
+- **Container Path:** `/data` (do not change this)
+- **Host Path:** `/mnt/user/appdata/popcorn` (you can customize this)
+- **Critical:** This volume mapping preserves your data across container updates
 
 ## Getting Your Plex Token
 
@@ -121,7 +123,7 @@ Environment Variables:
 - PLEX_CLIENT = Roku Living Room (optional)
 
 Path Mappings:
-- Container Path: /app → Host Path: /mnt/user/appdata/popcorn
+- Container Path: /data → Host Path: /mnt/user/appdata/popcorn
 ```
 
 ## After Installation
@@ -188,18 +190,24 @@ If using nginx or Swag for reverse proxy:
 4. Access from anywhere securely
 
 ### Backup Configuration
-Your Popcorn data is stored in `/mnt/user/appdata/popcorn`
+Your Popcorn data is stored in `/mnt/user/appdata/popcorn` on your Unraid server.
 
-To backup:
+**What's stored there:**
+- `popcorn.db` - Database with all your settings, users, devices, schedules
+- Backup files (if auto-backup is enabled)
+
+**To backup:**
 1. Stop the Popcorn container
 2. Copy the entire `/mnt/user/appdata/popcorn` folder
-3. Store backup safely
+3. Store backup safely (external drive, cloud, etc.)
 4. Restart container
 
-To restore:
+**To restore:**
 1. Stop the Popcorn container
 2. Replace `/mnt/user/appdata/popcorn` with backup
 3. Restart container
+
+**Important:** As long as you have this folder properly mapped, your configuration will persist across container updates!
 
 ## Troubleshooting
 
@@ -327,7 +335,7 @@ Streaming Stick 4K
 **IMPORTANT:** Client playback ONLY works when Popcorn runs on your **local network**.
 
 - ✅ **Unraid / Docker at home** = Can push to local devices
-- ❌ **Cloud hosting (Replit, etc.)** = Cannot reach local devices
+- ❌ **Cloud hosting** = Cannot reach local devices
 
 If running in the cloud, use **Web Player mode** instead (Profile → Playback Settings).
 
@@ -351,13 +359,62 @@ If running in the cloud, use **Web Player mode** instead (Profile → Playback S
 
 ## Updating Popcorn
 
-### Manual Update
+### ⚠️ CRITICAL: Upgrading to v2.3.1+ from Older Versions
+
+**If you're upgrading from a version older than 2.3.1**, you MUST manually update your container configuration BEFORE clicking "Update". Otherwise, you'll lose access to your data!
+
+#### Why This Matters
+
+- **Old versions** stored data in `/app` (which gets deleted on updates)
+- **New versions (2.3.1+)** store data in `/data` (which persists across updates)
+- Unraid's "Update" button **DOES NOT** change your volume mappings automatically
+
+#### Upgrade Steps for Existing Installations
+
+**Step 1: Backup Your Data**
+```bash
+# From Unraid terminal
+cp /mnt/user/appdata/popcorn/popcorn.db /mnt/user/appdata/popcorn-backup.db
+```
+
+**Step 2: Stop the Container**
+1. Go to Docker tab
+2. Click Popcorn container
+3. Click "Stop"
+
+**Step 3: Edit Container Settings**
+1. Click Popcorn container
+2. Click "Edit"
+3. Find the **Path Mappings** section
+4. Change the **Container Path** from `/app` to `/data`
+   - Host Path stays `/mnt/user/appdata/popcorn`
+   - Container Path changes from `/app` → `/data`
+5. Click "Apply"
+
+**Step 4: Verify in Logs**
+After container starts, check logs:
+```bash
+docker logs Popcorn | grep "Using database"
+```
+
+Should show: `INFO:__main__:Using database: /data/popcorn.db`
+
+If it shows `./popcorn.db`, your volume mapping is wrong - repeat Step 3.
+
+---
+
+### Regular Updates (After v2.3.1+)
+
+Once you're on v2.3.1 or newer with `/data` properly configured, regular updates are simple:
+
+**Manual Update**
 1. Go to Docker tab in Unraid
 2. Click "Check for Updates"
 3. If update available, click "Update"
 4. Container will restart automatically
+5. Your data persists automatically ✅
 
-### Auto-Update (Optional)
+**Auto-Update (Optional)**
 Enable auto-updates in Docker settings:
 1. Edit Popcorn container
 2. Enable "Auto Update" toggle

@@ -254,13 +254,54 @@ class UserDevice(Base):
     def __repr__(self):
         return f"<UserDevice(user_id={self.user_id}, device_name='{self.device_name}', platform='{self.platform}')>"
 
-def init_db(db_path='popcorn.db'):
+def is_volume_properly_mounted():
+    """
+    Check if /data is properly mounted to a host directory (not an anonymous volume).
+    Returns tuple: (is_mounted, warning_message)
+    """
+    import os
+    import subprocess
+    
+    data_dir = os.getenv('DATA_DIR', '.')
+    
+    # If not using /data, assume local development - no warning needed
+    if data_dir != '/data':
+        return (True, None)
+    
+    # Check if we're in Docker
+    if not os.path.exists('/.dockerenv'):
+        return (True, None)
+    
+    try:
+        # Check if /data has a real mount or is just an overlay/anonymous volume
+        result = subprocess.run(['mountpoint', '-q', '/data'], capture_output=True)
+        if result.returncode == 0:
+            # /data is a proper mount point
+            return (True, None)
+        else:
+            # /data is not mounted - using anonymous volume or overlay
+            return (False, "WARNING: /data is not mapped to a host directory. Database will be lost on container updates!")
+    except Exception:
+        # If mountpoint command fails, assume it's okay
+        return (True, None)
+
+def get_db_path():
+    """Get the database path from environment or use default"""
+    import os
+    data_dir = os.getenv('DATA_DIR', '.')
+    return os.path.join(data_dir, 'popcorn.db')
+
+def init_db(db_path=None):
+    if db_path is None:
+        db_path = get_db_path()
     engine = create_engine(f'sqlite:///{db_path}')
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine)
     return Session()
 
-def get_session(db_path='popcorn.db'):
+def get_session(db_path=None):
+    if db_path is None:
+        db_path = get_db_path()
     engine = create_engine(f'sqlite:///{db_path}')
     Session = sessionmaker(bind=engine)
     return Session()

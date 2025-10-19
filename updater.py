@@ -48,7 +48,7 @@ class UpdateManager:
         
     def get_current_version(self):
         """Get the current version from VERSION file or git"""
-        # Try VERSION file first (works on Replit and other platforms)
+        # Try VERSION file first 
         version_file = Path('VERSION')
         if version_file.exists():
             try:
@@ -148,12 +148,15 @@ class UpdateManager:
     
     def backup_database(self):
         """Create a backup of the database before updating"""
+        from models import get_db_path
+        db_path = Path(get_db_path())
+        
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_path = self.backup_dir / f"popcorn_{timestamp}.db"
         
         try:
-            if Path('popcorn.db').exists():
-                shutil.copy2('popcorn.db', backup_path)
+            if db_path.exists():
+                shutil.copy2(db_path, backup_path)
                 logger.info(f"Database backed up to {backup_path}")
                 return str(backup_path)
             return None
@@ -163,10 +166,13 @@ class UpdateManager:
     
     def restore_database(self, backup_path):
         """Restore database from backup"""
+        from models import get_db_path
+        db_path = Path(get_db_path())
+        
         try:
             if Path(backup_path).exists():
-                shutil.copy2(backup_path, 'popcorn.db')
-                logger.info(f"Database restored from {backup_path}")
+                shutil.copy2(backup_path, db_path)
+                logger.info(f"Database restored from {db_path}")
                 return True
         except Exception as e:
             logger.error(f"Failed to restore database: {e}")
@@ -216,7 +222,8 @@ class UpdateManager:
         from datetime import datetime
         
         try:
-            conn = sqlite3.connect('popcorn.db')
+            from models import get_db_path
+            conn = sqlite3.connect(get_db_path())
             cursor = conn.cursor()
             
             # Check if migration_history table exists

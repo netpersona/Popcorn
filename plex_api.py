@@ -169,27 +169,108 @@ class PlexAPI:
             return False, f"Error: {str(e)}", 0
     
     def get_available_clients(self):
-        """Get list of available Plex clients on the network"""
+        """
+        Get list of available Plex clients using multiple discovery methods.
+        
+        This combines several approaches to find as many devices as possible:
+        1. Active GDM clients (clients() - actively responding on network)
+        2. Currently playing sessions (sessions() - currently streaming)
+        3. MyPlex account resources (resources() - all registered devices)
+        """
         try:
-            logger.info(f"Fetching Plex clients from {self.base_url}...")
-            clients = self.plex.clients()
-            logger.info(f"Plex API returned {len(clients)} client(s)")
+            logger.info(f"Discovering Plex clients using multiple methods...")
+            client_map = {}  # Use dict to deduplicate by machine_identifier
             
-            client_list = []
-            for c in clients:
-                # Safely get platform - handle both missing attribute and None value
-                platform = 'Unknown'
-                if hasattr(c, 'platform') and c.platform:
-                    platform = c.platform
+            # Method 1: Active GDM clients (most reliable for controlling playback)
+            try:
+                clients = self.plex.clients()
+                logger.info(f"Method 1 (GDM): Found {len(clients)} active client(s)")
                 
-                client_info = {
-                    'name': c.title or 'Unknown Device', 
-                    'product': c.product or 'Unknown',
-                    'identifier': c.machineIdentifier,
-                    'platform': platform
-                }
-                client_list.append(client_info)
-                logger.debug(f"Found client: {client_info['name']} ({client_info['product']}) - {client_info['identifier']}")
+                for c in clients:
+                    platform = 'Unknown'
+                    if hasattr(c, 'platform') and c.platform:
+                        platform = c.platform
+                    
+                    client_map[c.machineIdentifier] = {
+                        'name': c.title or 'Unknown Device',
+                        'product': c.product or 'Unknown',
+                        'identifier': c.machineIdentifier,
+                        'platform': platform,
+                        'source': 'Active (GDM)'
+                    }
+                    logger.info(f"  → Active: {c.title} ({c.product})")
+            except Exception as e:
+                logger.warning(f"Could not get GDM clients: {e}")
+            
+            # Method 2: Currently playing sessions
+            try:
+                sessions = self.plex.sessions()
+                logger.info(f"Method 2 (Sessions): Found {len(sessions)} active session(s)")
+                
+                for session in sessions:
+                    if hasattr(session, 'player') and session.player:
+                        player = session.player
+                        identifier = player.machineIdentifier if hasattr(player, 'machineIdentifier') else f"session_{player.title}"
+                        
+                        # Don't overwrite GDM clients (they're more reliable)
+                        if identifier not in client_map:
+                            platform = player.platform if hasattr(player, 'platform') and player.platform else 'Unknown'
+                            
+                            client_map[identifier] = {
+                                'name': player.title or 'Unknown Player',
+                                'product': player.product if hasattr(player, 'product') else 'Unknown',
+                                'identifier': identifier,
+                                'platform': platform,
+                                'source': 'Playing Now'
+                            }
+                            logger.info(f"  → Playing: {player.title}")
+            except Exception as e:
+                logger.warning(f"Could not get active sessions: {e}")
+            
+            # Method 3: MyPlex account resources (all registered devices)
+            try:
+                from plexapi.myplex import MyPlexAccount
+                if hasattr(self.plex, '_token'):
+                    logger.info("Method 3 (MyPlex): Fetching account resources...")
+                    account = MyPlexAccount(token=self.plex._token)
+                    resources = account.resources()
+                    
+                    # Filter for client devices (not servers)
+                    client_resources = [r for r in resources if r.provides == 'client' or r.provides == 'player']
+                    logger.info(f"Method 3 (MyPlex): Found {len(client_resources)} registered client(s)")
+                    
+                    for resource in client_resources:
+                        # Don't overwrite active clients
+                        if resource.clientIdentifier not in client_map:
+                            platform = resource.platform if hasattr(resource, 'platform') and resource.platform else 'Unknown'
+                            
+                            client_map[resource.clientIdentifier] = {
+                                'name': resource.name or 'Unknown Device',
+                                'product': resource.product if hasattr(resource, 'product') else 'Unknown',
+                                'identifier': resource.clientIdentifier,
+                                'platform': platform,
+                                'source': 'Registered (may be offline)'
+                            }
+                            logger.info(f"  → Registered: {resource.name}")
+            except Exception as e:
+                logger.warning(f"Could not fetch MyPlex resources: {e}")
+            
+            # Convert to list and sort by source priority
+            client_list = list(client_map.values())
+            
+            # Sort: Active first, then Playing, then Registered
+            source_priority = {'Active (GDM)': 1, 'Playing Now': 2, 'Registered (may be offline)': 3}
+            client_list.sort(key=lambda x: (source_priority.get(x['source'], 4), x['name']))
+            
+            logger.info(f"Total unique clients discovered: {len(client_list)}")
+            
+            if len(client_list) == 0:
+                logger.warning("No clients found via any method. Troubleshooting tips:")
+                logger.warning("  1. Ensure Plex app is open on at least one device")
+                logger.warning("  2. Check that devices are on the same network")
+                logger.warning("  3. Verify using local Plex URL (not app.plex.tv)")
+                logger.warning("  4. Enable GDM in Plex Settings → Network")
+                logger.warning("  5. Check firewall allows UDP port 32414")
             
             return client_list
         except Exception as e:

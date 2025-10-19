@@ -7,7 +7,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class ScheduleGenerator:
-    def __init__(self, db_path='popcorn.db'):
+    def __init__(self, db_path=None):
+        from models import get_db_path
+        if db_path is None:
+            db_path = get_db_path()
         self.session = get_session(db_path)
         self.initialize_holiday_channels()
     

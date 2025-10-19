@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  popcorn:
+    image: netpersona/popcorn:latest
+    container_name: Popcorn
+    ports:
+      - "5000:5000"
+    volumes:
+      # Data persistence: Your database and configs are stored here
+      # Change the path before the colon to match your system
+      - ./popcorn-data:/data
+    environment:
+      # REQUIRED: Generate a random secret with: openssl rand -hex 32
+      - SESSION_SECRET=change-this-to-a-random-secret-key
+      
+      # OPTIONAL: Configure Plex settings here or via web UI
+      # Uncomment and fill in your Plex server details:
+      # - PLEX_URL=http://192.168.1.100:32400
+      # - PLEX_TOKEN=your-plex-token-here
+    restart: unless-stopped
+
+# To run: docker-compose up -d
+# To stop: docker-compose down
+# To update: docker-compose pull && docker-compose up -d

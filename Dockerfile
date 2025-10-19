@@ -8,8 +8,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Create data directory for persistent storage
+RUN mkdir -p /data
+
+# Declare volume for persistent data (database, configs)
+VOLUME ["/data"]
+
 ENV FLASK_APP=app.py
 ENV PYTHONUNBUFFERED=1
+ENV DATA_DIR=/data
 
 EXPOSE 5000
 
