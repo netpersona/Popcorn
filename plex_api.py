@@ -169,16 +169,31 @@ class PlexAPI:
             return False, f"Error: {str(e)}", 0
     
     def get_available_clients(self):
+        """Get list of available Plex clients on the network"""
         try:
+            logger.info(f"Fetching Plex clients from {self.base_url}...")
             clients = self.plex.clients()
-            return [{
-                'name': c.title, 
-                'product': c.product,
-                'identifier': c.machineIdentifier,
-                'platform': c.platform if hasattr(c, 'platform') else 'Unknown'
-            } for c in clients]
+            logger.info(f"Plex API returned {len(clients)} client(s)")
+            
+            client_list = []
+            for c in clients:
+                # Safely get platform - handle both missing attribute and None value
+                platform = 'Unknown'
+                if hasattr(c, 'platform') and c.platform:
+                    platform = c.platform
+                
+                client_info = {
+                    'name': c.title or 'Unknown Device', 
+                    'product': c.product or 'Unknown',
+                    'identifier': c.machineIdentifier,
+                    'platform': platform
+                }
+                client_list.append(client_info)
+                logger.debug(f"Found client: {client_info['name']} ({client_info['product']}) - {client_info['identifier']}")
+            
+            return client_list
         except Exception as e:
-            logger.error(f"Error fetching clients: {e}")
+            logger.error(f"Error fetching clients from Plex API: {e}", exc_info=True)
             return []
     
     def get_server_info(self):
