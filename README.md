@@ -1,4 +1,17 @@
+
+<img width="150" height="150" alt="logo" src="https://github.com/user-attachments/assets/fd24f2e3-0c8f-4171-8c99-85a6f99691bd" />
+
 # Popcorn - Cable-Style Movie Scheduler
+
+And old-school TV guide-style way of discovering, scheduling, and sharing movies with friends and family. 
+<img width="2770" height="1200" alt="image" src="https://github.com/user-attachments/assets/4d32401c-18fb-4b32-9462-a8a7ebe5d863" />
+
+Each movie has it's own information pop-up allowing you to learn more before making a decision.
+<img width="1331" height="1204" alt="image" src="https://github.com/user-attachments/assets/b032a261-fe29-4161-bad7-ef70ce9188be" />
+
+Users are encouraged to create and share their own themes! 
+<img width="1362" height="1188" alt="image" src="https://github.com/user-attachments/assets/4bbe4acc-b29e-4687-8cfc-a682a40bf85a" />
+
 
 ## Overview
 
