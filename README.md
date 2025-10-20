@@ -144,10 +144,6 @@ Access at `http://localhost:5000`
 
 ---
 
-## User Preferences
-
-Preferred communication style: Simple, everyday language.
-
 ## System Architecture
 
 ### Frontend Architecture
