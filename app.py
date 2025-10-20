@@ -1466,7 +1466,8 @@ def upload_theme():
     try:
         theme_json = file.read().decode('utf-8')
     except Exception as e:
-        return jsonify({'success': False, 'message': f'Failed to read file: {str(e)}'}), 400
+        logging.exception("Failed to read uploaded theme file")
+        return jsonify({'success': False, 'message': 'Failed to read file.'}), 400
     
     from theme_service import ThemeService
     is_public = request.form.get('is_public') == 'true' if current_user.is_admin else False
