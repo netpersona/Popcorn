@@ -181,7 +181,7 @@ class ThemeService:
         except Exception as e:
             session.rollback()
             logger.error(f"Failed to delete custom theme: {e}")
-            return False, str(e)
+            return False, "An internal error occurred while deleting the theme."
         finally:
             session.close()
     
