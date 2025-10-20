@@ -1130,7 +1130,7 @@ def get_clients():
         return jsonify({'success': True, 'clients': clients})
     except Exception as e:
         logger.error(f"Error getting clients: {e}", exc_info=True)
-        return jsonify({'success': False, 'clients': [], 'error': str(e)})
+        return jsonify({'success': False, 'clients': [], 'error': 'An internal server error occurred.'})
 
 @app.route('/api/devices', methods=['GET'])
 @login_required
