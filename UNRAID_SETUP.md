@@ -1,375 +1,278 @@
-# Popcorn - Unraid Setup Guide
+# 🍿 Popcorn - Unraid Setup Guide
 
-This guide explains how to install and configure Popcorn on Unraid.
+Complete installation and configuration guide for running Popcorn on Unraid.
 
-## Quick Installation
+---
 
-### Option 1: Community Applications (Coming Soon)
+## 📦 Installation
 
-Once Popcorn is added to Community Applications:
+### Community Applications (Recommended)
 
 1. Open Unraid web interface
-2. Go to **Apps** tab
-3. Search for "**Popcorn**"
+2. Navigate to **Apps** tab
+3. Search for **"Popcorn"**
 4. Click **Install**
-5. Configure the required settings (see below)
+5. Configure required settings (see below)
 6. Click **Apply**
 
-### Option 2: Manual Installation (Available Now)
+### Manual Installation
 
-You can install Popcorn manually while waiting for Community Apps approval:
+If the template isn't available in Community Apps yet:
 
 1. **Download the template:**
-   - Save `popcorn-unraid-template.xml` from the Popcorn repository
-   - Or create it manually (template provided below)
+   - Save `popcorn-unraid-template.xml` from the [GitHub repository](https://github.com/netpersona/Popcorn)
 
 2. **Upload to Unraid:**
-   - Copy the XML file to: `/boot/config/plugins/dockerMan/templates-user/`
-   - Or use the Unraid web interface: Docker → Add Container → Template dropdown
+   - Place the XML file in: `/boot/config/plugins/dockerMan/templates-user/`
+   - Or via web UI: **Docker → Add Container → Template dropdown**
 
-3. **Install from your template:**
-   - Go to Docker tab
+3. **Install from template:**
+   - Go to **Docker** tab
    - Click **Add Container**
    - Select your uploaded template
-   - Configure settings
-   - Click **Apply**
+   - Configure settings and click **Apply**
 
-## Required Configuration
+---
 
-When installing Popcorn on Unraid, you **must** configure these settings:
+## ⚙️ Required Configuration
 
-### 1. Session Secret (Required)
+### 1. Session Secret ✅ Required
+
+**Generate a secure random string for session encryption:**
+
+```bash
+# Generate using OpenSSL (recommended)
+openssl rand -hex 32
+```
+
 - **Field:** `SESSION_SECRET`
-- **Description:** Random secret key for session security
-- **Value:** Generate a random string (32+ characters recommended)
-- **Example:** `mysupersecretkey12345678901234567890`
-- **Security:** This field is masked (hidden) in the UI
+- **Example:** `a3f8d9e2b1c4567890abcdef12345678`
+- **Security:** This field is masked in the UI
 
-### 2. Plex Server URL (Required)
+### 2. Plex Server URL ✅ Required
+
+**The address of your Plex Media Server:**
+
 - **Field:** `PLEX_URL`
-- **Description:** URL of your Plex Media Server
 - **Format:** `http://IP_ADDRESS:32400`
 - **Examples:**
   - `http://192.168.1.100:32400` (local network)
-  - `http://tower.local:32400` (if using Unraid hostname)
-- **Note:** Use your Unraid server's IP if Plex is on the same machine
+  - `http://tower.local:32400` (using Unraid hostname)
+- **Important:** Use local IP for device playback (see troubleshooting)
 
-### 3. Plex Authentication Token (Required)
+### 3. Plex Authentication Token ✅ Required
+
+**Your Plex authentication token:**
+
 - **Field:** `PLEX_TOKEN`
-- **Description:** Your Plex authentication token
-- **How to get:** See "Getting Your Plex Token" section below
-- **Security:** This field is masked (hidden) in the UI
+- **How to obtain:** See [Finding Your Plex Token](#finding-your-plex-token) section
+- **Security:** This field is masked in the UI
 
-### 4. Plex Client Name (Optional)
-- **Field:** `PLEX_CLIENT`
-- **Description:** Name of your Plex playback device
-- **Examples:** `Roku Living Room`, `Plex for Android`
-- **Note:** Leave blank if you don't need direct playback to a specific client
-- **Purpose:** Allows playing movies directly on a Plex client (Roku, TV, etc.)
+### 4. Web UI Port (Optional)
 
-### 5. Web UI Port (Customizable)
+**Port for accessing the Popcorn interface:**
+
 - **Field:** `WebUI Port`
-- **Description:** Port for accessing Popcorn web interface
 - **Default:** `5000`
-- **Custom:** Change to any available port (e.g., `8080`, `7000`)
+- **Custom:** Any available port (e.g., `8080`, `7000`)
 - **Access:** `http://UNRAID_IP:PORT`
 
-### 6. AppData Path (IMPORTANT - Must Be Configured)
-- **Field:** `AppData`
-- **Description:** Where Popcorn stores its database and configuration files
-- **Default:** `/mnt/user/appdata/popcorn`
-- **Container Path:** `/data` (do not change this)
-- **Host Path:** `/mnt/user/appdata/popcorn` (you can customize this)
-- **Critical:** This volume mapping preserves your data across container updates
+### 5. AppData Path ⚠️ Critical
 
-## Getting Your Plex Token
+**Where Popcorn stores its database and configuration:**
 
-### Method 1: Using Plex Web App (Easiest)
-1. Open a movie in Plex Web App
-2. Click the three dots (⋮) → "Get Info"
-3. Click "View XML"
+- **Container Path:** `/data` (do NOT change)
+- **Host Path:** `/mnt/user/appdata/popcorn` (customizable)
+- **Purpose:** Preserves your data across container updates
+
+> **Critical:** Without proper volume mapping, you'll lose all data when updating!
+
+---
+
+## 🔑 Finding Your Plex Token
+
+### Method 1: Plex Web App (Easiest)
+
+1. Open any movie in Plex Web App
+2. Click the **three dots (⋮)** → **"Get Info"**
+3. Click **"View XML"**
 4. Look in the URL bar for `X-Plex-Token=XXXXX`
 5. Copy everything after the equals sign
 
-### Method 2: Using Browser Console
+### Method 2: Browser Console
+
 1. Open Plex Web App in your browser
-2. Press `F12` to open Developer Tools
-3. Go to Console tab
+2. Press **F12** to open Developer Tools
+3. Go to **Console** tab
 4. Type: `localStorage.getItem('myPlexAccessToken')`
 5. Press Enter and copy the token (without quotes)
 
-### Method 3: Using Plex Devices Page
-1. Sign in at https://www.plex.tv/sign-in
-2. Navigate to: https://plex.tv/devices.xml
+### Method 3: Plex Devices Page
+
+1. Sign in at [plex.tv/sign-in](https://www.plex.tv/sign-in)
+2. Navigate to: [plex.tv/devices.xml](https://plex.tv/devices.xml)
 3. Find your server in the XML
 4. Look for `token="YOUR_TOKEN"`
 
-## Installation Example
+📖 [Official Plex Documentation](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 
-Here's a complete installation example with all settings:
+---
+
+## 📋 Complete Installation Example
 
 ```
 Container Name: Popcorn
-Repository: your-dockerhub-username/popcorn:latest
+Repository: netpersona/popcorn:latest
 Network Type: Bridge
 
 Port Mappings:
-- Container Port: 5000 → Host Port: 5000 (or your custom port)
+  5000 (Container) → 5000 (Host)
 
 Environment Variables:
-- SESSION_SECRET = myverylongrandomsecretkey12345678
-- PLEX_URL = http://192.168.1.100:32400
-- PLEX_TOKEN = AbCdEfGhIjKlMnOpQrStUvWxYz123456
-- PLEX_CLIENT = Roku Living Room (optional)
+  SESSION_SECRET = a3f8d9e2b1c4567890abcdef12345678
+  PLEX_URL = http://192.168.1.100:32400
+  PLEX_TOKEN = AbCdEfGhIjKlMnOpQrStUvWxYz123456
 
 Path Mappings:
-- Container Path: /data → Host Path: /mnt/user/appdata/popcorn
+  /data (Container) → /mnt/user/appdata/popcorn (Host)
 ```
 
-## After Installation
+---
 
-### First Run
-1. Wait for the container to start (may take a minute)
+## 🚀 First-Time Setup
+
+### Initial Access
+
+1. Wait for the container to start (may take 30-60 seconds)
 2. Access Popcorn at: `http://UNRAID_IP:5000`
-3. Popcorn will automatically:
-   - Connect to your Plex server
-   - Scan your movie library
-   - Generate channels based on genres
-   - Create 24-hour schedules
+3. Login with default credentials:
+   - **Username:** `admin`
+   - **Password:** `admin`
+4. **⚠️ Change the default password immediately**
 
-### Verify Installation
-1. Check container logs in Unraid Docker tab
-2. Should see: "Connected to Plex server" and "Schedules generated"
-3. Open the web interface and verify channels appear
+### Automatic Setup
 
-### If Something Goes Wrong
-- Check Docker logs for error messages
-- Verify Plex credentials are correct
-- Make sure Plex server is running and accessible
-- See Troubleshooting section below
+Popcorn will automatically:
+- Connect to your Plex server
+- Scan your movie library
+- Generate genre-based channels
+- Create 24-hour schedules
 
-## Using Popcorn on Unraid
+### Verification
 
-### Accessing the Interface
-- **Local network:** `http://UNRAID_IP:5000`
-- **From any device:** Browse to the URL on phone, tablet, or computer
-- **Bookmark it:** Add to your favorites for quick access
+**Check container logs:**
+```bash
+docker logs Popcorn
+```
+
+**Look for:**
+- ✅ `Connected to Plex server`
+- ✅ `Schedules generated`
+- ✅ Channels visible in web interface
+
+---
+
+## 🔄 Regular Usage
 
 ### Syncing New Movies
-When you add new movies to your Plex library:
+
+When you add movies to Plex:
+
 1. Open Popcorn web interface
-2. Click the menu icon
-3. Select "Sync"
-4. Wait for sync to complete
-5. New movies will appear in appropriate channels
+2. Click the **menu icon**
+3. Select **"Sync"**
+4. Wait for sync completion
+5. New movies appear in appropriate channels
 
 ### Changing Settings
-1. Go to Settings page
-2. Change reshuffle frequency (Daily/Weekly/Monthly)
-3. Click "Save Settings"
-4. Use "Reshuffle Now" to regenerate schedules immediately
 
-## Unraid-Specific Tips
+1. Navigate to **Settings** page
+2. Adjust reshuffle frequency (Daily/Weekly/Monthly)
+3. Click **"Save Settings"**
+4. Use **"Reshuffle Now"** to regenerate schedules immediately
 
-### Using Unraid as Plex Server
-If Plex is running on the same Unraid server:
-- Use `http://UNRAID_IP:32400` for PLEX_URL
-- Or use `http://localhost:32400` if both are on the same Docker network
-- Or use `http://172.17.0.1:32400` to access host from container
+---
 
-### Network Configuration
-- **Bridge Mode** (default) - Standard Docker networking
-- **Host Mode** - Use if having connection issues (advanced)
-- **Custom Bridge** - If using custom Docker networks
+## 🔧 Unraid-Specific Tips
 
-### Reverse Proxy (Advanced)
-If using nginx or Swag for reverse proxy:
-1. Add Popcorn to your proxy configuration
+### Plex on Same Unraid Server
+
+If Plex runs on the same Unraid server as Popcorn:
+
+```bash
+# Option 1: Use Unraid IP
+PLEX_URL=http://192.168.1.100:32400
+
+# Option 2: Use localhost (if same Docker network)
+PLEX_URL=http://localhost:32400
+
+# Option 3: Docker bridge gateway
+PLEX_URL=http://172.17.0.1:32400
+```
+
+### Network Modes
+
+- **Bridge Mode** (default) – Standard Docker networking
+- **Host Mode** – Required for client discovery (see troubleshooting)
+- **Custom Bridge** – For custom Docker networks
+
+### Reverse Proxy Setup (Advanced)
+
+Using nginx or Swag:
+
+1. Add Popcorn to proxy configuration
 2. Set up subdomain: `popcorn.yourdomain.com`
 3. Configure SSL certificate
-4. Access from anywhere securely
+4. Access securely from anywhere
 
-### Backup Configuration
-Your Popcorn data is stored in `/mnt/user/appdata/popcorn` on your Unraid server.
+### Backup & Restore
 
-**What's stored there:**
-- `popcorn.db` - Database with all your settings, users, devices, schedules
-- Backup files (if auto-backup is enabled)
+**Backup Location:** `/mnt/user/appdata/popcorn`
 
-**To backup:**
-1. Stop the Popcorn container
-2. Copy the entire `/mnt/user/appdata/popcorn` folder
-3. Store backup safely (external drive, cloud, etc.)
-4. Restart container
+**What's Stored:**
+- `popcorn.db` – Database with settings, users, schedules
+- Backup files (if auto-backup enabled)
 
-**To restore:**
-1. Stop the Popcorn container
-2. Replace `/mnt/user/appdata/popcorn` with backup
-3. Restart container
-
-**Important:** As long as you have this folder properly mapped, your configuration will persist across container updates!
-
-## Troubleshooting
-
-### Container Won't Start
-**Check:**
-1. Docker logs in Unraid interface
-2. Port conflicts (is port 5000 already used?)
-3. AppData path is accessible
-4. Required environment variables are set
-
-**Solution:**
+**To Backup:**
 ```bash
-# From Unraid terminal:
-docker logs Popcorn
+# Stop container
+docker stop Popcorn
 
-# Check if port is in use:
-netstat -tlnp | grep 5000
+# Copy data directory
+cp -r /mnt/user/appdata/popcorn /mnt/user/backups/popcorn-backup
+
+# Restart container
+docker start Popcorn
 ```
 
-### "Plex API not available" Error
-**Check:**
-1. PLEX_URL is correct and Plex is running
-2. PLEX_TOKEN is valid (not expired)
-3. Popcorn container can reach Plex (network)
-4. Firewall not blocking connection
-
-**Test Connection:**
+**To Restore:**
 ```bash
-# From Unraid terminal:
-curl http://YOUR_PLEX_IP:32400/identity
-```
-Should return XML with server info.
+# Stop container
+docker stop Popcorn
 
-### No Channels Showing
-**Check:**
-1. Plex library actually has movies
-2. Movies have genre tags
-3. Sync completed successfully (check logs)
+# Replace data directory
+rm -rf /mnt/user/appdata/popcorn
+cp -r /mnt/user/backups/popcorn-backup /mnt/user/appdata/popcorn
 
-**Solution:**
-1. Go to: `http://UNRAID_IP:5000/sync`
-2. Wait for sync to complete
-3. Check container logs for errors
-
-### Can't Play Movies / "No Plex Clients Found" Error
-
-**This error means Popcorn cannot discover your Plex playback devices.** Here's how to fix it:
-
-#### 1. Use Correct Local PLEX_URL
-**CRITICAL:** For client playback, you MUST use your **local network IP**, not a public/remote URL.
-
-```bash
-# ✅ CORRECT - Local IP address
-PLEX_URL=http://10.0.0.25:32400
-
-# ❌ WRONG - Public IP or domain (won't discover local clients)
-PLEX_URL=http://66.241.174.242:19019
-PLEX_URL=https://myplex.mydomain.com
+# Restart container
+docker start Popcorn
 ```
 
-**Why:** The Plex API's `/clients` endpoint only sees devices on the same local network. Public URLs use Plex's cloud relay and won't show local clients.
+---
 
-**Test if your URL works:**
-```bash
-# Should show your Roku/clients in XML (while Plex app is open on device)
-curl "http://YOUR_LOCAL_PLEX_IP:32400/clients?X-Plex-Token=YOUR_TOKEN"
-```
+## 🔄 Updating Popcorn
 
-If you get `<MediaContainer size="0">` (empty), your PLEX_URL is wrong or pointing to a remote server.
+### ⚠️ Critical: Upgrading from Pre-v2.3.1
 
-#### 2. Use Host Network Mode
-**REQUIRED:** Both Plex AND Popcorn containers must use **Host network mode** for client discovery.
+**If upgrading from versions older than 2.3.1, read this section carefully!**
 
-In Unraid Docker settings:
-1. **Edit Popcorn container**
-2. Change **Network Type** from `Bridge` to `Host`
-3. **Remove port mappings** (not needed in host mode)
-4. **Save and restart**
+#### Why Manual Migration is Required
 
-Repeat for Plex container if it's also in bridge mode.
+- **Old versions:** Stored data in `/app` (deleted on updates)
+- **New versions (2.3.1+):** Store data in `/data` (persists across updates)
+- Unraid's "Update" button **does NOT** change volume mappings automatically
 
-**Why:** Bridge mode isolates containers from network broadcasts (GDM protocol) that Plex uses to discover devices.
-
-#### 3. Pi-hole / DNS Ad-Blocker Users
-If you use **Pi-hole, AdGuard, or similar DNS ad-blockers**, you must whitelist:
-
-```
-config.claspws.tv
-```
-
-This is Plex's companion app service used for device discovery.
-
-**In Pi-hole:**
-1. Go to Whitelist
-2. Add: `config.claspws.tv`
-3. Save
-4. Restart Plex app on your device
-
-#### 4. Plex App Must Be Open on Target Device
-The Plex app must be **running** on your playback device (Roku, TV, etc.):
-
-- ✅ **Plex app open** on home screen = Device advertises itself
-- ❌ **Plex app closed** = Device won't show up
-
-You don't need to be actively playing anything - just have the app open.
-
-#### 5. Use Correct Client Identifier
-In your Popcorn **Profile settings** (or `PLEX_CLIENT` env var), use:
-
-**Option A - Device UUID (recommended):**
-```
-6d89441adccb7d3506b90954cddc17cf
-```
-
-Get UUID from: `https://plex.tv/api/resources.xml?X-Plex-Token=YOUR_TOKEN`
-
-**Option B - Device Name:**
-```
-Streaming Stick 4K
-```
-
-**Why UUID is better:** If you have multiple devices with the same name, UUID ensures you target the right one.
-
-#### 6. Cloud vs Local Deployment
-**IMPORTANT:** Client playback ONLY works when Popcorn runs on your **local network**.
-
-- ✅ **Unraid / Docker at home** = Can push to local devices
-- ❌ **Cloud hosting** = Cannot reach local devices
-
-If running in the cloud, use **Web Player mode** instead (Profile → Playback Settings).
-
-#### Quick Checklist
-- [ ] PLEX_URL uses local IP (e.g., `http://10.0.0.25:32400`)
-- [ ] Both Plex and Popcorn containers use Host network mode
-- [ ] Whitelisted `config.claspws.tv` if using Pi-hole
-- [ ] Plex app is open on target device
-- [ ] Same Plex account on server and client device
-- [ ] Running Popcorn on local network (not cloud)
-
-**Still not working?**
-- Switch to **Web Player mode** (works everywhere, no client discovery needed)
-- Check Plex server logs for GDM errors
-
-### Performance Issues
-**Check:**
-1. Unraid server has enough resources
-2. Not running too many Docker containers
-3. AppData is on cache drive (SSD) for better performance
-
-## Updating Popcorn
-
-### ⚠️ CRITICAL: Upgrading to v2.3.1+ from Older Versions
-
-**If you're upgrading from a version older than 2.3.1**, you MUST manually update your container configuration BEFORE clicking "Update". Otherwise, you'll lose access to your data!
-
-#### Why This Matters
-
-- **Old versions** stored data in `/app` (which gets deleted on updates)
-- **New versions (2.3.1+)** store data in `/data` (which persists across updates)
-- Unraid's "Update" button **DOES NOT** change your volume mappings automatically
-
-#### Upgrade Steps for Existing Installations
+#### Migration Steps
 
 **Step 1: Backup Your Data**
 ```bash
@@ -378,127 +281,220 @@ cp /mnt/user/appdata/popcorn/popcorn.db /mnt/user/appdata/popcorn-backup.db
 ```
 
 **Step 2: Stop the Container**
-1. Go to Docker tab
-2. Click Popcorn container
-3. Click "Stop"
+1. Go to **Docker** tab
+2. Click **Popcorn** container
+3. Click **"Stop"**
 
-**Step 3: Edit Container Settings**
-1. Click Popcorn container
-2. Click "Edit"
-3. Find the **Path Mappings** section
-4. Change the **Container Path** from `/app` to `/data`
-   - Host Path stays `/mnt/user/appdata/popcorn`
-   - Container Path changes from `/app` → `/data`
-5. Click "Apply"
+**Step 3: Update Volume Mapping**
+1. Click **Popcorn** container
+2. Click **"Edit"**
+3. Find **Path Mappings** section
+4. Change **Container Path** from `/app` → `/data`
+   - Host Path: `/mnt/user/appdata/popcorn` (unchanged)
+   - Container Path: `/data` (changed)
+5. Click **"Apply"**
 
-**Step 4: Verify in Logs**
-After container starts, check logs:
+**Step 4: Verify**
 ```bash
+# Check logs after container starts
 docker logs Popcorn | grep "Using database"
+
+# Should show: INFO:__main__:Using database: /data/popcorn.db
+# If shows ./popcorn.db, volume mapping is incorrect
 ```
 
-Should show: `INFO:__main__:Using database: /data/popcorn.db`
+### Regular Updates (v2.3.1+)
 
-If it shows `./popcorn.db`, your volume mapping is wrong - repeat Step 3.
+Once properly configured, updates are automatic:
 
----
+**Manual Update:**
+1. **Docker** tab → **Check for Updates**
+2. Click **"Update"** if available
+3. Container restarts automatically
+4. Data persists ✅
 
-### Regular Updates (After v2.3.1+)
-
-Once you're on v2.3.1 or newer with `/data` properly configured, regular updates are simple:
-
-**Manual Update**
-1. Go to Docker tab in Unraid
-2. Click "Check for Updates"
-3. If update available, click "Update"
-4. Container will restart automatically
-5. Your data persists automatically ✅
-
-**Auto-Update (Optional)**
-Enable auto-updates in Docker settings:
+**Auto-Update (Optional):**
 1. Edit Popcorn container
-2. Enable "Auto Update" toggle
+2. Enable **"Auto Update"** toggle
 3. Set update schedule
 4. Save changes
 
-## Advanced Configuration
+---
+
+## 🔍 Troubleshooting
+
+### Container Won't Start
+
+**Checklist:**
+- [ ] Docker logs show errors: `docker logs Popcorn`
+- [ ] Port 5000 not already in use: `netstat -tlnp | grep 5000`
+- [ ] AppData path accessible
+- [ ] Required environment variables set
+
+### "Plex API not available" Error
+
+**Checklist:**
+- [ ] `PLEX_URL` is correct and Plex is running
+- [ ] `PLEX_TOKEN` is valid (not expired)
+- [ ] Network connectivity between containers
+
+**Test Connection:**
+```bash
+# Should return XML with server info
+curl http://YOUR_PLEX_IP:32400/identity
+```
+
+### No Channels Showing
+
+**Solutions:**
+1. Verify Plex library has movies with genre tags
+2. Manually sync: `http://UNRAID_IP:5000/sync`
+3. Check container logs for errors
+
+### Can't Play Movies / "No Plex Clients Found"
+
+This is the most common issue. Here's how to fix it:
+
+#### 1. Use Local PLEX_URL ⚠️ Critical
+
+**MUST use your local network IP, not public URLs:**
+
+```bash
+# ✅ CORRECT - Local IP
+PLEX_URL=http://192.168.1.100:32400
+
+# ❌ WRONG - Public IP or domain
+PLEX_URL=http://66.241.174.242:19019
+PLEX_URL=https://myplex.mydomain.com
+```
+
+**Why:** The Plex `/clients` endpoint only discovers devices on the same local network.
+
+**Test:**
+```bash
+# Should show your devices in XML (while Plex app is open)
+curl "http://YOUR_LOCAL_IP:32400/clients?X-Plex-Token=YOUR_TOKEN"
+```
+
+#### 2. Use Host Network Mode ✅ Required
+
+**Both Plex AND Popcorn must use Host network mode for device discovery:**
+
+1. Edit **Popcorn** container
+2. Change **Network Type** from `Bridge` → `Host`
+3. Remove port mappings (not needed in host mode)
+4. Save and restart
+
+**Why:** Bridge mode isolates containers from network broadcasts (GDM protocol) used by Plex for device discovery.
+
+#### 3. Pi-hole / DNS Ad-Blocker Users
+
+**Whitelist this domain:**
+```
+config.claspws.tv
+```
+
+This is Plex's companion app service for device discovery.
+
+**In Pi-hole:**
+1. Go to **Whitelist**
+2. Add: `config.claspws.tv`
+3. Save
+4. Restart Plex app on device
+
+#### 4. Plex App Must Be Open
+
+The Plex app must be **running** on your target device:
+
+- ✅ Plex app open on home screen = Device visible
+- ❌ Plex app closed = Device hidden
+
+You don't need to play anything—just have the app open.
+
+#### 5. Use Correct Client Identifier
+
+In **Profile → Playback Settings** (or `PLEX_CLIENT` env var):
+
+**Option A - Device UUID (Recommended):**
+```
+6d89441adccb7d3506b90954cddc17cf
+```
+
+Get UUID from: `https://plex.tv/api/resources.xml?X-Plex-Token=YOUR_TOKEN`
+
+**Option B - Device Name:**
+```
+Roku Living Room
+```
+
+**Why UUID:** Ensures correct targeting if you have multiple devices with the same name.
+
+#### 6. Cloud vs Local Deployment
+
+**Client playback ONLY works on local networks:**
+
+- ✅ Unraid/Docker at home = Can push to local devices
+- ❌ Cloud hosting = Cannot reach local devices
+
+If cloud-hosted, use **Web Player mode** instead.
+
+#### Quick Checklist
+
+- [ ] `PLEX_URL` uses local IP (e.g., `http://192.168.1.100:32400`)
+- [ ] Both Plex and Popcorn use **Host network mode**
+- [ ] Whitelisted `config.claspws.tv` (if using Pi-hole)
+- [ ] Plex app is **open** on target device
+- [ ] Same Plex account on server and client
+- [ ] Running on local network (not cloud)
+
+**Still not working?**
+- Switch to **Web Player mode** (works everywhere)
+- Check Plex server logs for GDM errors
+
+### Performance Issues
+
+**Checklist:**
+- [ ] Unraid server has sufficient resources
+- [ ] Not running too many containers
+- [ ] AppData on cache drive (SSD) for better performance
+
+---
+
+## 🎯 Advanced Configuration
 
 ### Custom Docker Network
+
 ```bash
 # Create custom network
 docker network create popcorn-net
 
-# Edit container to use custom network
-# In Unraid Docker settings, change Network Type to: popcorn-net
+# Edit container to use: popcorn-net
 ```
 
 ### Resource Limits
-In Unraid Docker settings, you can limit:
-- CPU cores
-- Memory (RAM)
-- Disk space
 
-Recommended minimums:
-- CPU: 1 core
-- RAM: 512 MB
-- Disk: 1 GB
+Set limits in Unraid Docker settings:
 
-## Support
+**Recommended Minimums:**
+- **CPU:** 1 core
+- **RAM:** 512 MB
+- **Disk:** 1 GB
 
-If you need help:
+---
+
+## 💬 Support
+
+Need help? Try these resources:
 
 1. **Check logs first:**
-   - Unraid Docker tab → Popcorn → Logs
-   
-2. **Search documentation:**
-   - USER_GUIDE.md has comprehensive troubleshooting
-   
-3. **Community support:**
+   - Unraid: **Docker** tab → **Popcorn** → **Logs**
+
+2. **Documentation:**
+   - [User Guide](USER_GUIDE.md) – Comprehensive troubleshooting
+   - [GitHub Issues](https://github.com/netpersona/Popcorn/issues)
+
+3. **Community:**
    - Unraid forums
-   - GitHub issues
+   - GitHub Discussions
 
----
-
-## Publishing to Community Applications
-
-### For Developers
-
-To add Popcorn to Unraid Community Applications:
-
-1. **Create GitHub repository** with Popcorn code
-2. **Upload template** (`popcorn-unraid-template.xml`)
-3. **Update template URLs:**
-   - Change `your-dockerhub-username` to actual Docker Hub username
-   - Change `your-username` to GitHub username
-   - Update all GitHub URLs
-
-4. **Publish Docker image:**
-   ```bash
-   docker build -t your-dockerhub-username/popcorn:latest .
-   docker push your-dockerhub-username/popcorn:latest
-   ```
-
-5. **Submit to Community Applications:**
-   - Fork: https://github.com/Squidly271/AppFeed
-   - Add your template XML to appropriate category
-   - Submit pull request
-   - Wait for approval
-
-6. **Create support thread:**
-   - Post on Unraid forums
-   - Explain what Popcorn does
-   - Link to GitHub repository
-   - Provide installation instructions
-
-### Template Checklist
-- [ ] All URLs updated with real usernames
-- [ ] Docker image published to Docker Hub
-- [ ] Icon URL accessible (PNG format)
-- [ ] Support forum thread created
-- [ ] Template tested on Unraid
-- [ ] All required variables documented
-- [ ] GitHub repository is public
-
----
-
-Enjoy Popcorn on Unraid! 🍿📺
+**Enjoy Popcorn on Unraid! 🍿📺**
