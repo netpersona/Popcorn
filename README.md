@@ -1,75 +1,95 @@
+<div align="center">
 
-<img width="150" height="150" alt="logo" src="https://github.com/user-attachments/assets/fd24f2e3-0c8f-4171-8c99-85a6f99691bd" />
+<img width="150" height="150" alt="Popcorn Logo" src="https://github.com/user-attachments/assets/fd24f2e3-0c8f-4171-8c99-85a6f99691bd" />
 
-# Popcorn - Cable-Style Movie Scheduler
+# Popcorn
 
-And old-school TV guide-style way of discovering, scheduling, and sharing movies with friends and family. 
-<img width="2770" height="1200" alt="image" src="https://github.com/user-attachments/assets/4d32401c-18fb-4b32-9462-a8a7ebe5d863" />
+**Transform your Plex library into a nostalgic cable TV experience**
 
-Each movie has it's own information pop-up allowing you to learn more before making a decision.
-<img width="1331" height="1204" alt="image" src="https://github.com/user-attachments/assets/b032a261-fe29-4161-bad7-ef70ce9188be" />
+An old-school TV guide for discovering, scheduling, and sharing movies with friends and family.
 
-Users are encouraged to create and share their own themes! 
-<img width="1362" height="1188" alt="image" src="https://github.com/user-attachments/assets/4bbe4acc-b29e-4687-8cfc-a682a40bf85a" />
+![License](https://img.shields.io/github/license/netpersona/Popcorn)
+![Docker Pulls](https://img.shields.io/docker/pulls/netpersona/popcorn)
+![GitHub Stars](https://img.shields.io/github/stars/netpersona/Popcorn)
 
-
-## Overview
-
-Popcorn is a Flask-based web application that transforms a Plex media library into an interactive, nostalgic cable TV experience. The application automatically generates genre-based and seasonal movie schedules, presenting them in a TV guide interface that mimics traditional cable television. Users can browse channels, view schedules, and launch movies directly on their Plex devices.
-
-Key features include:
-- Automatic channel generation based on movie genres (Action, Comedy, Drama, Horror, etc.)
-- Seasonal holiday channels (Halloween, Christmas, etc.)
-- TV guide interface with time-based program grid
-- Multi-device playback management for Plex clients
-- User authentication with Plex OAuth integration
-- Customizable themes and retro TV aesthetic options
-- Watch history tracking and viewing statistics
-- Admin controls for user management and system settings
+</div>
 
 ---
 
-## Installation
+## 📺 Screenshots
 
-### Docker Compose (Recommended - Everything Pre-Configured!)
+<img width="2770" alt="TV Guide Interface" src="https://github.com/user-attachments/assets/4d32401c-18fb-4b32-9462-a8a7ebe5d863" />
 
-The easiest way to run Popcorn is with Docker Compose - all volume mappings are pre-configured:
+*Browse channels with a time-based program grid—just like traditional cable television*
 
-1. **Download the docker-compose.yml file** from this repo
-2. **Edit two values**:
-   - Change `SESSION_SECRET` to a random string (generate with `openssl rand -hex 32`)
-   - Optionally add your Plex URL and token
-3. **Run it**:
+<img width="1331" alt="Movie Details" src="https://github.com/user-attachments/assets/b032a261-fe29-4161-bad7-ef70ce9188be" />
 
+*Each movie has its own information pop-up to help you decide what to watch*
+
+<img width="1362" alt="Custom Themes" src="https://github.com/user-attachments/assets/4bbe4acc-b29e-4687-8cfc-a682a40bf85a" />
+
+*Create and share your own custom themes for a personalized experience*
+
+---
+
+
+## ✨ Features
+
+- **🎬 Auto-Generated Channels** – Action, Comedy, Drama, Horror, and more—organized from your Plex library
+- **🎃 Seasonal Channels** – Halloween Horror, Christmas Classics, and holiday-themed programming
+- **📺 Retro TV Guide** – Time-based program grid with optional CRT effects and film grain
+- **📱 Multi-Device Playback** – Save your Roku, Apple TV, Fire Stick, and other Plex clients
+- **🔐 Secure Authentication** – Plex OAuth or local accounts with admin controls
+- **🎨 Customizable Themes** – Plex dark mode, seasonal themes, or create your own
+- **📊 Watch History** – Track what you've watched with viewing statistics
+- **👥 User Management** – Admin dashboard with invite codes and access controls
+
+---
+
+## 🚀 Quick Start
+
+### Docker Compose (Recommended)
+
+The easiest installation method with automatic persistence:
+
+1. **Download** `docker-compose.yml` from this repository
+2. **Edit** the file:
+   ```yaml
+   SESSION_SECRET: "your-random-secret-here"  # Generate with: openssl rand -hex 32
+   PLEX_URL: "http://192.168.1.100:32400"     # Optional
+   PLEX_TOKEN: "your-plex-token"              # Optional
+   ```
+3. **Launch**:
+   ```bash
+   docker-compose up -d
+   ```
+
+Your data automatically persists in `./popcorn-data` and survives container updates.
+
+**Update anytime:** 
 ```bash
-docker-compose up -d
+docker-compose pull && docker-compose up -d
 ```
 
-That's it! Your data automatically persists in `./popcorn-data` and survives updates.
-
-**To update:** `docker-compose pull && docker-compose up -d`
-
 ---
 
-### Unraid (Also Pre-Configured!)
+### Unraid
 
 Install from **Community Applications**:
-1. Search for "Popcorn" in Community Applications
-2. The template has all volume mappings pre-configured
-3. Just fill in your SESSION_SECRET and optionally Plex settings
-4. Click Apply!
 
-See [UNRAID_SETUP.md](UNRAID_SETUP.md) for details.
+1. Search for "Popcorn" in Community Apps
+2. Fill in `SESSION_SECRET` (and optionally Plex settings)
+3. Click **Apply**
+
+All volume mappings are pre-configured. See [UNRAID_SETUP.md](UNRAID_SETUP.md) for details.
 
 ---
 
-### Manual Docker Run
-
-If you prefer the command line (requires manual volume configuration):
+### Manual Docker
 
 ```bash
 docker run -d \
-  --name Popcorn \
+  --name popcorn \
   -p 5000:5000 \
   -v ./popcorn-data:/data \
   -e SESSION_SECRET="$(openssl rand -hex 32)" \
@@ -79,49 +99,47 @@ docker run -d \
   netpersona/popcorn:latest
 ```
 
-**⚠️ Critical:** The `-v ./popcorn-data:/data` flag maps your database to a local directory. Without it, you'll lose all data when updating the container.
+> ⚠️ **Critical:** The `-v ./popcorn-data:/data` volume mapping is required to persist your database between updates.
 
 ---
+
+## ⚙️ Configuration
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `SESSION_SECRET` | Yes | Secret key for session encryption (generate with `openssl rand -hex 32`) |
-| `PLEX_URL` | No* | Your Plex server URL (e.g., `http://192.168.1.100:32400`) |
-| `PLEX_TOKEN` | No* | Your Plex authentication token |
-| `DATA_DIR` | No | Data directory path (default: `/data` in Docker, `./` for local dev) |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SESSION_SECRET` | **Yes** | — | Session encryption key (generate with `openssl rand -hex 32`) |
+| `PLEX_URL` | No | — | Plex server URL (e.g., `http://192.168.1.100:32400`) |
+| `PLEX_TOKEN` | No | — | Plex authentication token |
+| `DATA_DIR` | No | `/data` | Data directory path (Docker) or `./` (local dev) |
 
-*Can be configured through the web interface after first login
-
-**Note for Advanced Users:** If you set `DATA_DIR` to a custom path in your Docker image, the volume detection will show a warning unless that path is a proper mount point. This is intentional to prevent data loss. To disable the warning, ensure your custom path is mounted, or use the default `/data` location.
-
----
+> **Note:** `PLEX_URL` and `PLEX_TOKEN` can be configured through the web interface after first login.
 
 ### Finding Your Plex Token
 
 1. Open Plex Web App and play any item
-2. Click the ⓘ icon → "View XML"
+2. Click the **ⓘ** icon → **View XML**
 3. Look for `X-Plex-Token=` in the URL
 4. Copy the token value
 
-See [Plex Support](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/) for details.
+📖 [Official Plex Documentation](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 
 ---
 
-### First-Time Setup
+## 🎯 First-Time Setup
 
-1. Access the web interface at `http://your-server-ip:5000`
-2. Log in with default credentials:
-   - **Username:** `admin`
-   - **Password:** `admin`
-3. **Change the default password immediately** (you'll see a warning banner)
-4. Configure Plex settings in Admin → Settings if not set via environment variables
-5. Generate your first schedule from the home page
+1. **Access** the web interface at `http://your-server-ip:5000`
+2. **Login** with default credentials:
+   - Username: `admin`
+   - Password: `admin`
+3. **⚠️ Change the default password immediately** (you'll see a warning banner)
+4. **Configure Plex** in **Admin → Settings** (if not set via environment variables)
+5. **Generate** your first schedule from the home page
 
 ---
 
-### Local Development
+## 🛠️ Local Development
 
 ```bash
 # Clone the repository
@@ -131,7 +149,7 @@ cd Popcorn
 # Install dependencies
 pip install -r requirements.txt
 
-# Set environment variables
+# Configure environment
 export SESSION_SECRET="$(openssl rand -hex 32)"
 export PLEX_URL="http://192.168.1.100:32400"
 export PLEX_TOKEN="your-token-here"
@@ -144,84 +162,69 @@ Access at `http://localhost:5000`
 
 ---
 
-## System Architecture
+## 🏗️ Architecture
 
-### Frontend Architecture
+### Frontend
+- **Server-Side Rendering** with Jinja2 templates and Bootstrap 5
+- **Dynamic Theme System** using CSS custom properties
+- **Responsive Design** with mobile (<600px), tablet (600-1023px), and desktop (≥1024px) breakpoints
+- **Optional Retro Effects** including CRT monitor simulation and film grain overlay
 
-**Server-Side Rendering (SSR)**: The application uses Jinja2 templates with Bootstrap 5 for UI rendering. All pages are generated server-side, reducing client-side JavaScript complexity.
+### Backend
+- **Flask** web framework with SQLAlchemy ORM
+- **Multi-Strategy Authentication** supporting Plex OAuth and local accounts
+- **Automated Schedule Generation** with genre-based and seasonal channels
+- **Image Caching** using bounded LRU cache (300 items, ~150MB)
+- **Multi-Device Playback** with platform-specific client management
 
-**Dynamic Theme System**: Themes are managed through CSS custom properties (CSS variables), allowing users to switch between predefined themes (Plex, Halloween, etc.) or create custom themes. Theme colors are injected into templates at render time, ensuring consistent styling across all pages.
+### Integrations
+- **Plex Media Server** via PlexAPI library for metadata and playback control
+- **Plex OAuth** for seamless user authentication
+- **GitHub** for automatic update detection (Docker-aware)
 
-**Mobile-Responsive Design**: The UI implements responsive breakpoints for Mobile (<600px), Tablet (600-1023px), and Desktop (≥1024px). The TV guide adapts from a horizontal scrolling grid on desktop to vertical channel stacking with horizontally scrollable movie tiles on mobile devices.
+---
 
-**Interactive Elements**: JavaScript is used minimally for specific interactions like device discovery modals, poster hover effects, and the hamburger navigation menu. Touch-friendly interactions support tap-to-show-info and tap-to-play workflows on mobile devices.
+## 📊 Data Models
 
-**Retro TV Aesthetic**: Admin-toggleable visual features include CRT monitor effects, film grain overlay, and classic cable channel numbering system (e.g., Horror = Channel 666).
+- **User** – Authentication, preferences, admin flags
+- **Movie** – Plex metadata (title, genre, duration, posters)
+- **Schedule** – Time-slot assignments for channels
+- **HolidayChannel** – Seasonal channel configurations
+- **WatchHistory** – Viewing records and statistics
+- **SavedDevice** – User's Plex playback devices
+- **CustomTheme** – User-created color schemes
 
-### Backend Architecture
+Database migrations are idempotent and safe for upgrades.
 
-**Web Framework**: Flask serves as the core web framework, handling routing, session management, and request/response cycles.
+---
 
-**Authentication System**: Multi-strategy authentication supporting both Plex OAuth and local username/password accounts. Flask-Login manages user sessions. Default demo accounts (`admin`/`admin`, `demo`/`demo`) are created on first startup for immediate access.
+## 🔐 Security
 
-**Schedule Generation**: The `ScheduleGenerator` class creates 24-hour movie schedules by:
-1. Fetching movies from Plex and categorizing by genre
-2. Generating time slots based on movie duration
-3. Creating holiday channels with keyword and genre filtering
-4. Storing schedules in the database for quick retrieval
+- **CSRF Protection** on all forms
+- **Password Hashing** with Werkzeug
+- **Session Encryption** via Flask secret keys
+- **Default Password Warnings** for new installations
 
-**Multi-Device Playback**: Users can save multiple Plex client devices (TVs, streaming sticks, etc.) with platform-specific identification. The system supports device discovery via Plex API and manages playback initiation to the selected device.
+---
 
-**Image Caching**: A bounded LRU cache (max 300 items, ~150MB) stores movie posters to reduce repeated requests to Plex servers. The cache evicts oldest items when limit is reached.
+## 🤝 Contributing
 
-**Security Features**: CSRF protection on all forms, password hashing with Werkzeug, session secret key management, and security warnings for users with default passwords.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-### Data Storage
+---
 
-**SQLAlchemy ORM**: Database abstraction layer supporting SQLite by default (can be configured for other databases via Drizzle adapter if needed).
+## 📄 License
 
-**Core Data Models**:
-- `User`: Authentication, preferences (theme, default device), admin flags
-- `Movie`: Plex movie metadata (title, genre, duration, ratings, poster URLs)
-- `Schedule`: Time-slot assignments for movies on channels
-- `HolidayChannel`: Configuration for seasonal channels (date ranges, keyword filters)
-- `WatchHistory`: User viewing records for statistics and "watched" badges
-- `Invitation`: Admin-generated invite codes for user registration
-- `CustomTheme`: User-created color themes
-- `SavedDevice`: User's saved Plex playback devices
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-**Database Migrations**: Idempotent migration system ensures safe schema updates during application upgrades.
+---
 
-### External Dependencies
+## 💬 Support
 
-**Plex Media Server Integration**:
-- **PlexAPI Library**: Python library for interacting with Plex servers
-- **Required Credentials**: Plex server URL and authentication token (configured via environment variables or database settings)
-- **Functionality**: Fetches movie libraries, retrieves metadata, initiates playback on client devices, discovers available Plex clients
-- **Client Discovery**: Real-time device discovery showing platform-specific icons (Roku, Android, iOS, Xbox, etc.)
+- **Issues:** [GitHub Issues](https://github.com/netpersona/Popcorn/issues)
+- **Documentation:** [Wiki](https://github.com/netpersona/Popcorn/wiki)
 
-**Plex OAuth Service**:
-- **Purpose**: Allow users to authenticate using their Plex.tv accounts
-- **Flow**: PIN-based OAuth flow generates auth URLs, polls for authorization, retrieves user tokens
-- **Endpoints**: `https://plex.tv/api/v2/pins` for PIN generation, `https://plex.tv/users/account.json` for user profile
+---
 
-**Session Management**:
-- **Flask-Login**: Handles user session persistence and authentication state
-- **Session Secret**: Requires `SESSION_SECRET` environment variable for secure session encryption
-
-**Form Security**:
-- **Flask-WTF**: Provides CSRF protection for all forms
-- **CSRFProtect**: Global CSRF token validation on POST requests
-
-**Image Proxying**:
-- **Requests Library**: Fetches movie posters from Plex servers and proxies them through the application
-- **Purpose**: Avoids CORS issues and enables caching
-
-**Update System** (Optional):
-- **GitHub Integration**: `UpdateManager` class can check for new releases from GitHub repository
-- **Docker Detection**: Automatically detects if running in Docker container to adjust update behavior
-
-**Frontend Assets**:
-- **Bootstrap 5**: CDN-hosted CSS framework
-- **Font Awesome 6**: CDN-hosted icon library
+**Made with ❤️ for Plex enthusiasts who miss the golden age of channel surfing**
 - **Custom CSS**: Inline styles in templates for theme-specific styling
