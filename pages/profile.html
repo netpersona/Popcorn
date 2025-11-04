@@ -1376,22 +1376,38 @@
                     loading.style.display = 'none';
                     devicesList.style.display = 'block';
                     
-                    // Build device list HTML
-                    let html = '';
+                    // Build device list HTML using safer approach
+                    devicesList.innerHTML = '';
                     data.clients.forEach(client => {
                         const icon = getDeviceIcon(client.product, client.platform);
-                        html += `
-                            <div class="device-item" onclick="selectDevice('${client.identifier}', '${client.name.replace(/'/g, "\\'")}')">
-                                <i class="${icon}"></i>
-                                <div class="device-info">
-                                    <div class="device-name">${client.name}</div>
-                                    <div class="device-details">${client.product} • ${client.platform}</div>
-                                </div>
-                                <i class="fas fa-chevron-right device-select-icon"></i>
+                        const deviceItem = document.createElement('div');
+                        deviceItem.className = 'device-item';
+                        deviceItem.dataset.identifier = client.identifier;
+                        deviceItem.dataset.name = client.name;
+                        deviceItem.dataset.product = client.product || '';
+                        deviceItem.dataset.platform = client.platform || '';
+                        deviceItem.style.cursor = 'pointer';
+                        
+                        deviceItem.innerHTML = `
+                            <i class="${icon}"></i>
+                            <div class="device-info">
+                                <div class="device-name">${escapeHtml(client.name)}</div>
+                                <div class="device-details">${escapeHtml(client.product)} • ${escapeHtml(client.platform)}</div>
                             </div>
+                            <i class="fas fa-chevron-right device-select-icon"></i>
                         `;
+                        
+                        deviceItem.addEventListener('click', function() {
+                            selectDevice(
+                                this.dataset.identifier,
+                                this.dataset.name,
+                                this.dataset.product,
+                                this.dataset.platform
+                            );
+                        });
+                        
+                        devicesList.appendChild(deviceItem);
                     });
-                    devicesList.innerHTML = html;
                 } else {
                     // Show error
                     loading.style.display = 'none';
@@ -1420,7 +1436,7 @@
             document.getElementById('devices-modal').style.display = 'none';
         }
         
-        function selectDevice(identifier, name) {
+        async function selectDevice(identifier, name, product, platform) {
             // Fill the input with the device identifier
             document.getElementById('plex_client_input').value = identifier;
             
@@ -1429,6 +1445,48 @@
             
             // Close modal
             closeDevicesModal();
+            
+            // Auto-save to My Devices if not already saved
+            try {
+                const response = await fetch('/api/devices');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const alreadySaved = data.devices.some(d => d.machine_identifier === identifier);
+                    
+                    if (!alreadySaved) {
+                        // Save device automatically
+                        const saveResponse = await fetch('/api/devices', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                device_name: name,
+                                machine_identifier: identifier,
+                                platform: platform || '',
+                                product: product || '',
+                                is_default: false
+                            })
+                        });
+                        
+                        const saveData = await saveResponse.json();
+                        if (saveData.success) {
+                            showToast(`Device saved to My Devices`, 'success');
+                            loadSavedDevices();
+                        }
+                    }
+                }
+            } catch (error) {
+                // Silent fail - not critical if auto-save doesn't work
+                console.error('Failed to auto-save device:', error);
+            }
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         function getDeviceIcon(product, platform) {
@@ -1608,23 +1666,35 @@
                     loading.style.display = 'none';
                     devicesList.style.display = 'block';
                     
-                    let html = '';
+                    devicesList.innerHTML = '';
                     data.clients.forEach(client => {
                         const icon = getDeviceIcon(client.product, client.platform);
-                        html += `
-                            <div class="device-item" style="cursor: default;">
-                                <i class="${icon}"></i>
-                                <div class="device-info">
-                                    <div class="device-name">${client.name}</div>
-                                    <div class="device-details">${client.product} • ${client.platform}</div>
-                                </div>
-                                <button class="btn-small btn-default" onclick="showSaveDeviceForm('${client.identifier}', '${client.name.replace(/'/g, "\\'")}', '${client.platform.replace(/'/g, "\\'")}', '${client.product.replace(/'/g, "\\'")}')">
-                                    <i class="fas fa-save"></i> Save
-                                </button>
+                        const deviceItem = document.createElement('div');
+                        deviceItem.className = 'device-item';
+                        deviceItem.style.cssText = 'cursor: default; display: flex; align-items: center; justify-content: space-between;';
+                        
+                        const saveButton = document.createElement('button');
+                        saveButton.className = 'btn-small btn-default';
+                        saveButton.innerHTML = '<i class="fas fa-save"></i> Save';
+                        saveButton.onclick = function() {
+                            showSaveDeviceForm(
+                                client.identifier,
+                                client.name,
+                                client.platform || '',
+                                client.product || ''
+                            );
+                        };
+                        
+                        deviceItem.innerHTML = `
+                            <i class="${icon}"></i>
+                            <div class="device-info">
+                                <div class="device-name">${escapeHtml(client.name)}</div>
+                                <div class="device-details">${escapeHtml(client.product)} • ${escapeHtml(client.platform)}</div>
                             </div>
                         `;
+                        deviceItem.appendChild(saveButton);
+                        devicesList.appendChild(deviceItem);
                     });
-                    devicesList.innerHTML = html;
                 } else {
                     loading.style.display = 'none';
                     error.style.display = 'block';
@@ -1656,31 +1726,44 @@
             const devicesList = document.getElementById('save-devices-list');
             const icon = getDeviceIcon(product, platform);
             
-            devicesList.innerHTML = `
-                <div style="padding: 10px;">
-                    <div class="device-item" style="cursor: default; margin-bottom: 20px;">
-                        <i class="${icon}"></i>
-                        <div class="device-info">
-                            <div class="device-name">${name}</div>
-                            <div class="device-details">${product} • ${platform}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="checkbox-wrapper">
-                        <input type="checkbox" id="set-as-default-checkbox">
-                        <label for="set-as-default-checkbox">Set as default device</label>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px; margin-top: 20px;">
-                        <button class="btn-primary" onclick="saveDevice('${identifier}', '${name.replace(/'/g, "\\'")}', '${platform.replace(/'/g, "\\'")}', '${product.replace(/'/g, "\\'")}')">
-                            <i class="fas fa-save"></i> Save Device
-                        </button>
-                        <button class="btn-secondary" onclick="openSaveDeviceModal()">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
+            const formContainer = document.createElement('div');
+            formContainer.style.padding = '10px';
+            
+            formContainer.innerHTML = `
+                <div class="device-item" style="cursor: default; margin-bottom: 20px;">
+                    <i class="${icon}"></i>
+                    <div class="device-info">
+                        <div class="device-name">${escapeHtml(name)}</div>
+                        <div class="device-details">${escapeHtml(product)} • ${escapeHtml(platform)}</div>
                     </div>
                 </div>
+                
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" id="set-as-default-checkbox">
+                    <label for="set-as-default-checkbox">Set as default device</label>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn-primary" id="save-device-btn">
+                        <i class="fas fa-save"></i> Save Device
+                    </button>
+                    <button class="btn-secondary" id="back-to-devices-btn">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                </div>
             `;
+            
+            devicesList.innerHTML = '';
+            devicesList.appendChild(formContainer);
+            
+            // Add event listeners
+            document.getElementById('save-device-btn').addEventListener('click', function() {
+                saveDevice(identifier, name, platform, product);
+            });
+            
+            document.getElementById('back-to-devices-btn').addEventListener('click', function() {
+                openSaveDeviceModal();
+            });
         }
 
         async function saveDevice(identifier, name, platform, product) {
