@@ -323,4 +323,5 @@ class PlexAPI:
             
         except Exception as e:
             logger.error(f"Failed to verify library access: {e}")
-            return False, f"Cannot access Plex server: {str(e)}"
+            # Return a generic error message to the client to avoid leaking internal details
+            return False, "Cannot access Plex server at this time. Please try again later or contact your administrator."
