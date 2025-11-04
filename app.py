@@ -984,7 +984,10 @@ def play(movie_id):
         logger.info(f"Returning web_url to client: {result}")
         return jsonify({'success': True, 'message': message, 'web_url': result, 'offset_min': offset_min})
     else:
-        return jsonify({'success': success, 'message': result, 'offset_min': offset_min if success else 0})
+        # Log the detailed error for debugging
+        logger.warning(f"Playback failure for user {current_user.id} ({current_user.username}). Error: {result}")
+        # Return only a generic error to the client
+        return jsonify({'success': False, 'message': "Failed to start playback. Please try again or contact support.", 'offset_min': 0})
 
 @app.route('/api/favorite/<int:movie_id>', methods=['POST'])
 @login_required
