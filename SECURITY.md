@@ -2,7 +2,8 @@
 ## Supported Versions
 
 ### Version     Supported
-- [x] 2.0.x
+- [x] 2.1.x
+- [ ] 2.0
 - [ ] 1.0
 
 
