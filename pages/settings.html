@@ -336,6 +336,49 @@
             color: var(--text-secondary);
         }
 
+        .holiday-item-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            transition: transform 0.2s;
+        }
+
+        .holiday-item-link:hover {
+            transform: translateX(5px);
+        }
+
+        .holiday-item-link:hover .holiday-item {
+            background: var(--bg-secondary);
+            border-left-color: var(--accent-hover);
+            cursor: pointer;
+        }
+
+        .holiday-item {
+            position: relative;
+        }
+
+        .edit-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .holiday-item-link:hover .edit-icon {
+            opacity: 1;
+        }
+
+        .section-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
         .feature-list {
             list-style: none;
             padding: 0;
@@ -465,6 +508,10 @@
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </button>
+            <button class="menu-item" onclick="window.location.href='/users'">
+                <i class="fas fa-users"></i>
+                <span>User Management</span>
+            </button>
             <form method="POST" action="/logout" style="margin: 0;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                 <button type="submit" class="menu-item">
@@ -572,6 +619,131 @@
 
                 <div class="settings-card">
                     <div class="card-header">
+                        <h4><i class="fas fa-film"></i> TMDB Integration (Optional)</h4>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                            The Movie Database (TMDB) API provides enhanced movie metadata for better holiday channel filtering. 
+                            Get a free API key at <a href="https://www.themoviedb.org/settings/api" target="_blank" style="color: var(--accent);">https://www.themoviedb.org/settings/api</a>
+                        </p>
+
+                        <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 3px solid {% if settings.tmdb_api_key %}#4ade80{% else %}var(--text-muted){% endif %};">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                {% if settings.tmdb_api_key %}
+                                    <i class="fas fa-check-circle" style="color: #4ade80;"></i>
+                                    <strong style="color: #4ade80;">TMDB Integration: Enabled ✓</strong>
+                                {% else %}
+                                    <i class="fas fa-times-circle" style="color: var(--text-muted);"></i>
+                                    <strong style="color: var(--text-muted);">TMDB Integration: Not Configured</strong>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <form method="POST" id="tmdbConfigForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            
+                            <div class="form-group">
+                                <label for="tmdb_api_key" class="form-label">
+                                    TMDB API Key
+                                </label>
+                                <input type="password" name="tmdb_api_key" id="tmdb_api_key" 
+                                       class="form-select" 
+                                       placeholder="Enter your TMDB API key (optional)"
+                                       value="{{ settings.tmdb_api_key or '' }}">
+                                <span class="form-text">
+                                    <strong>Benefits:</strong> Enables collection-based filtering, keyword matching, and popularity/rating filters for holiday channels
+                                </span>
+                            </div>
+
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                                    <i class="fas fa-save"></i> Save TMDB Key
+                                </button>
+                                <button type="button" id="testTmdbBtn" class="btn btn-warning" style="flex: 1;">
+                                    <i class="fas fa-plug"></i> Test Connection
+                                </button>
+                            </div>
+
+                            <div id="tmdbTestResult" style="margin-top: 15px; display: none;"></div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-layer-group"></i> Movie Libraries</h4>
+                    </div>
+                    <div class="card-body">
+                        {% if available_libraries %}
+                            <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                                Select which Plex movie libraries you want to include in Popcorn. Deselect libraries you don't want included in your channels.
+                            </p>
+
+                            <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 3px solid var(--accent);">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-info-circle" style="color: var(--accent);"></i>
+                                    <strong>{{ selected_libraries|length }} of {{ available_libraries|length }} libraries selected</strong>
+                                </div>
+                            </div>
+
+                            <form method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <input type="hidden" name="library_selection" value="1"/>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px;">
+                                    {% for library in available_libraries %}
+                                    <label style="display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--bg-tertiary); border-radius: 6px; cursor: pointer; transition: background 0.2s;" 
+                                           onmouseover="this.style.background='var(--bg-secondary)'" 
+                                           onmouseout="this.style.background='var(--bg-tertiary)'">
+                                        <input type="checkbox" 
+                                               name="selected_libraries" 
+                                               value="{{ library }}" 
+                                               {% if library in selected_libraries %}checked{% endif %}
+                                               style="width: 18px; height: 18px; cursor: pointer;">
+                                        <i class="fas fa-film" style="color: var(--accent);"></i>
+                                        <span style="font-size: 0.95rem; font-weight: 500;">{{ library }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+
+                                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                    <i class="fas fa-save"></i> Update Library Selection
+                                </button>
+                                
+                                <span class="form-text" style="display: block; margin-top: 10px;">
+                                    <strong>Note:</strong> Deselecting a library will remove its movies from all channels and regenerate schedules.
+                                </span>
+                            </form>
+                        {% elif settings.plex_url and settings.plex_token %}
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 6px; border-left: 3px solid var(--text-muted);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-exclamation-triangle" style="color: var(--text-muted);"></i>
+                                    <div>
+                                        <strong style="color: var(--text-secondary);">No movie libraries found</strong>
+                                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 5px 0 0 0;">
+                                            Make sure your Plex server has at least one movie library configured.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div style="background: var(--bg-tertiary); padding: 15px; border-radius: 6px; border-left: 3px solid var(--text-muted);">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-info-circle" style="color: var(--text-muted);"></i>
+                                    <div>
+                                        <strong style="color: var(--text-secondary);">Connect to Plex first</strong>
+                                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 5px 0 0 0;">
+                                            Configure your Plex connection above to see available movie libraries.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
                         <h4><i class="fas fa-users"></i> User Management</h4>
                     </div>
                     <div class="card-body">
@@ -632,22 +804,30 @@
                         <h4><i class="fas fa-calendar-star"></i> Holiday Channels</h4>
                     </div>
                     <div class="card-body">
+                        <p class="section-description">Click any channel to edit filters and manage movie overrides</p>
                         <div class="holiday-list">
-                            <div class="holiday-item">
-                                <h6><i class="fas fa-ghost"></i> Cozy Halloween</h6>
-                                <small>Active: September - November</small>
-                                <p>Family-friendly Halloween movies (G, PG, PG-13)</p>
-                            </div>
-                            <div class="holiday-item">
-                                <h6><i class="fas fa-skull"></i> Scary Halloween</h6>
-                                <small>Active: September - November</small>
-                                <p>Adult horror movies (R, NR)</p>
-                            </div>
-                            <div class="holiday-item">
-                                <h6><i class="fas fa-tree"></i> Christmas</h6>
-                                <small>Active: November - January</small>
-                                <p>Christmas and holiday movies (All ratings)</p>
-                            </div>
+                            {% set month_names = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] %}
+                            {% for channel in holiday_channels %}
+                                <a href="{{ url_for('edit_holiday_channel', id=channel.id) }}" class="holiday-item-link">
+                                    <div class="holiday-item">
+                                        <h6>
+                                            {% if 'Halloween' in channel.name and 'Cozy' in channel.name %}
+                                                <i class="fas fa-ghost"></i>
+                                            {% elif 'Halloween' in channel.name %}
+                                                <i class="fas fa-skull"></i>
+                                            {% elif 'Christmas' in channel.name %}
+                                                <i class="fas fa-tree"></i>
+                                            {% else %}
+                                                <i class="fas fa-calendar-star"></i>
+                                            {% endif %}
+                                            {{ channel.name }}
+                                        </h6>
+                                        <small>Active: {{ month_names[channel.start_month] }} - {{ month_names[channel.end_month] }}</small>
+                                        <p>{{ 'Seasonal movie channel with custom filters' }}</p>
+                                        <i class="fas fa-chevron-right edit-icon"></i>
+                                    </div>
+                                </a>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -791,6 +971,67 @@
                 formData.append('csrf_token', csrfToken);
 
                 const response = await fetch('/settings/test-plex', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                resultDiv.style.display = 'block';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+
+                if (data.success) {
+                    resultDiv.style.background = '#1a4d1a';
+                    resultDiv.style.border = '1px solid #2a6d2a';
+                    resultDiv.style.color = '#4ade80';
+                    resultDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+                } else {
+                    resultDiv.style.background = '#4d1a1a';
+                    resultDiv.style.border = '1px solid #6d2a2a';
+                    resultDiv.style.color = '#f87171';
+                    resultDiv.innerHTML = '<i class="fas fa-times-circle"></i> ' + data.message;
+                }
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#4d1a1a';
+                resultDiv.style.border = '1px solid #6d2a2a';
+                resultDiv.style.color = '#f87171';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error: ' + error.message;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+            }
+        });
+
+        document.getElementById('testTmdbBtn').addEventListener('click', async function() {
+            const btn = this;
+            const resultDiv = document.getElementById('tmdbTestResult');
+            const tmdbApiKey = document.getElementById('tmdb_api_key').value;
+            const csrfToken = document.querySelector('#tmdbConfigForm input[name="csrf_token"]').value;
+
+            if (!tmdbApiKey) {
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#4d1a1a';
+                resultDiv.style.border = '1px solid #6d2a2a';
+                resultDiv.style.color = '#f87171';
+                resultDiv.style.padding = '15px';
+                resultDiv.style.borderRadius = '6px';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please enter a TMDB API key';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+
+            try {
+                const formData = new FormData();
+                formData.append('tmdb_api_key', tmdbApiKey);
+                formData.append('csrf_token', csrfToken);
+
+                const response = await fetch('/admin/test-tmdb', {
                     method: 'POST',
                     body: formData
                 });

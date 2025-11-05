@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if channel %}Edit{% else %}Create{% endif %} Holiday Channel - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 20px 40px 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-error {
+            background: #4d1a1a;
+            border: 1px solid #6d2a2a;
+            color: #f87171;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: var(--bg-tertiary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header h3 {
+            font-size: 1.1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .form-label-required::after {
+            content: '*';
+            color: #f87171;
+            margin-left: 4px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 4px;
+            font-size: 0.95rem;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-text {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .toggle-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .toggle-button {
+            position: relative;
+            padding: 10px 20px;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .toggle-button:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+        }
+
+        .toggle-button.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        .toggle-button input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .info-box {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .info-box i {
+            color: #4ade80;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="header-title">
+                <i class="fas fa-calendar-alt"></i> {% if channel %}Edit{% else %}Create{% endif %} Holiday Channel
+            </div>
+        </div>
+        <div>
+            <a href="/settings" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Settings
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="page-header">
+            <h1>{% if channel %}Edit Holiday Channel{% else %}Create New Holiday Channel{% endif %}</h1>
+            <p>Configure the filters and active period for this holiday channel.</p>
+        </div>
+
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-info-circle"></i> Basic Information</h3>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label class="form-label form-label-required" for="name">Channel Name</label>
+                        <input type="text" id="name" name="name" class="form-control" 
+                               value="{{ channel.name if channel else '' }}" required>
+                        <small class="form-text">A descriptive name for this holiday channel (e.g., "Cozy Halloween", "Christmas Classics")</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label form-label-required" for="start_month">Start Month</label>
+                            <select id="start_month" name="start_month" class="form-select" required>
+                                {% for month in range(1, 13) %}
+                                    <option value="{{ month }}" {% if channel and channel.start_month == month %}selected{% endif %}>
+                                        {{ month }} - {% if month == 1 %}January{% elif month == 2 %}February{% elif month == 3 %}March{% elif month == 4 %}April{% elif month == 5 %}May{% elif month == 6 %}June{% elif month == 7 %}July{% elif month == 8 %}August{% elif month == 9 %}September{% elif month == 10 %}October{% elif month == 11 %}November{% else %}December{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label form-label-required" for="end_month">End Month</label>
+                            <select id="end_month" name="end_month" class="form-select" required>
+                                {% for month in range(1, 13) %}
+                                    <option value="{{ month }}" {% if channel and channel.end_month == month %}selected{% endif %}>
+                                        {{ month }} - {% if month == 1 %}January{% elif month == 2 %}February{% elif month == 3 %}March{% elif month == 4 %}April{% elif month == 5 %}May{% elif month == 6 %}June{% elif month == 7 %}July{% elif month == 8 %}August{% elif month == 9 %}September{% elif month == 10 %}October{% elif month == 11 %}November{% else %}December{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <small class="form-text">Channel will be active from start month to end month (inclusive). Wrap-around is supported (e.g., November to January).</small>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-filter"></i> Filter Configuration</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-box">
+                        <i class="fas fa-lightbulb"></i>
+                        <strong>Filter Mode:</strong> Choose "AND" to require both genre and keyword matches, or "OR" to match if either filter succeeds.
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="filter_mode">Filter Mode</label>
+                        <select id="filter_mode" name="filter_mode" class="form-select">
+                            <option value="OR" {% if not channel or channel.filter_mode == 'OR' %}selected{% endif %}>OR (Match either genre or keyword)</option>
+                            <option value="AND" {% if channel and channel.filter_mode == 'AND' %}selected{% endif %}>AND (Match both genre and keyword)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="genre_filter">Genre Filter</label>
+                        <input type="text" id="genre_filter" name="genre_filter" class="form-control" 
+                               value="{{ channel.genre_filter if channel and channel.genre_filter else '' }}">
+                        <small class="form-text">Comma-separated list of genres to match (e.g., "horror,thriller,animation")</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="keywords">Keywords</label>
+                        <textarea id="keywords" name="keywords" class="form-control">{{ channel.keywords if channel and channel.keywords else '' }}</textarea>
+                        <small class="form-text">Comma-separated keywords to search in movie titles and summaries (e.g., "halloween,ghost,witch")</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Rating Filter</label>
+                        <div class="toggle-group">
+                            {% set ratings = ['G', 'PG', 'PG-13', 'R', 'NR', 'Unrated'] %}
+                            {% set selected_ratings = channel.rating_filter.split(',') if channel and channel.rating_filter else [] %}
+                            {% for rating in ratings %}
+                                <label class="toggle-button {% if rating in selected_ratings or rating.upper() in selected_ratings %}active{% endif %}" onclick="toggleRating(this)">
+                                    <input type="checkbox" name="rating_filter" value="{{ rating }}" 
+                                           {% if rating in selected_ratings or rating.upper() in selected_ratings %}checked{% endif %}>
+                                    {{ rating }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <small class="form-text">Select which content ratings are allowed. Leave all unchecked to allow any rating.</small>
+                    </div>
+                </div>
+            </div>
+
+            {% if has_tmdb %}
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="fas fa-film"></i> TMDB Advanced Filters</h3>
+                </div>
+                <div class="card-body">
+                    <div class="info-box">
+                        <i class="fas fa-info-circle"></i>
+                        These filters use TMDB data to further refine movie matching. All TMDB filters are optional.
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="tmdb_collection_ids">TMDB Collection IDs</label>
+                        <input type="text" id="tmdb_collection_ids" name="tmdb_collection_ids" class="form-control" 
+                               value="{{ channel.tmdb_collection_ids if channel and channel.tmdb_collection_ids else '' }}">
+                        <small class="form-text">Comma-separated TMDB collection IDs (e.g., "91361" for Halloween Collection)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="tmdb_keywords">TMDB Keywords</label>
+                        <input type="text" id="tmdb_keywords" name="tmdb_keywords" class="form-control" 
+                               value="{{ channel.tmdb_keywords if channel and channel.tmdb_keywords else '' }}">
+                        <small class="form-text">Comma-separated TMDB keywords to match</small>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="min_rating">Minimum Rating</label>
+                            <input type="number" id="min_rating" name="min_rating" class="form-control" 
+                                   step="0.1" min="0" max="10" 
+                                   value="{{ channel.min_rating if channel and channel.min_rating else '' }}">
+                            <small class="form-text">Minimum TMDB rating (0-10)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="min_popularity">Minimum Popularity</label>
+                            <input type="number" id="min_popularity" name="min_popularity" class="form-control" 
+                                   step="0.1" min="0" 
+                                   value="{{ channel.min_popularity if channel and channel.min_popularity else '' }}">
+                            <small class="form-text">Minimum TMDB popularity score</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {% if channel %}Update Channel{% else %}Create Channel{% endif %}
+                </button>
+                {% if channel %}
+                <a href="/admin/holiday-channels/{{ channel.id }}/test" class="btn btn-secondary">
+                    <i class="fas fa-flask"></i> Test Filters
+                </a>
+                {% endif %}
+                <a href="/settings" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function toggleRating(label) {
+            const checkbox = label.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            label.classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Holiday Channel - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: {{ theme_colors['bg-primary'] }};
+            --bg-secondary: {{ theme_colors['bg-secondary'] }};
+            --bg-tertiary: {{ theme_colors['bg-tertiary'] }};
+            --accent: {{ theme_colors['accent'] }};
+            --accent-hover: {{ theme_colors['accent-hover'] }};
+            --text-primary: {{ theme_colors['text-primary'] }};
+            --text-secondary: {{ theme_colors['text-secondary'] }};
+            --text-muted: {{ theme_colors['text-muted'] }};
+            --border: {{ theme_colors['border'] }};
+            --shadow: {{ theme_colors['shadow'] }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: var(--bg-secondary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 40px 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background: var(--bg-tertiary);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-header h3 {
+            font-size: 1.1rem;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .config-item {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 4px;
+        }
+
+        .config-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .config-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .results-summary {
+            background: rgba(74, 222, 128, 0.1);
+            border: 1px solid rgba(74, 222, 128, 0.3);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .results-summary i {
+            font-size: 1.5rem;
+            color: #4ade80;
+        }
+
+        .results-summary strong {
+            font-size: 1.1rem;
+        }
+
+        .movie-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .movie-item {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 15px;
+            transition: all 0.2s;
+        }
+
+        .movie-item:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent);
+        }
+
+        .movie-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .movie-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .movie-meta {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .movie-rating {
+            background: var(--bg-primary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .movie-genres {
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .genre-badge {
+            background: var(--bg-primary);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .match-reasons {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .match-reasons-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .match-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .match-tag {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .match-tag-genre {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+        }
+
+        .match-tag-keyword {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .match-tag-rating {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        .match-tag-tmdb {
+            background: rgba(251, 146, 60, 0.2);
+            color: #fb923c;
+        }
+
+        .match-tag-whitelist {
+            background: rgba(236, 72, 153, 0.2);
+            color: #ec4899;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 10px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
+        }
+
+        .btn-success {
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #16a34a;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-warning {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #d97706;
+        }
+
+        .override-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .override-box {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .override-box h4 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .override-box.whitelist h4 {
+            color: #22c55e;
+        }
+
+        .override-box.blacklist h4 {
+            color: #ef4444;
+        }
+
+        .override-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .override-list li {
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .override-list li:last-child {
+            border-bottom: none;
+        }
+
+        .override-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .override-badge.whitelist {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .override-badge.blacklist {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .movie-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .search-box i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .match-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .match-badge.matches {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .match-badge.no-match {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-muted);
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .suggestion-item {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .suggestion-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .suggestion-item label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .suggestion-type {
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .suggestion-type.genre {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+        }
+
+        .suggestion-type.keyword {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+        }
+
+        .search-results-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .search-results-empty i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="header-title">
+                <i class="fas fa-flask"></i> Test Holiday Channel
+            </div>
+        </div>
+        <div class="action-buttons">
+            <a href="/admin/holiday-channels/{{ channel.id }}/edit" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Channel
+            </a>
+            <a href="/admin/holiday-channels" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="page-header">
+            <h1>Testing: {{ channel.name }}</h1>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <div class="override-summary">
+            <div class="override-box whitelist">
+                <h4>
+                    <i class="fas fa-thumbs-up"></i> 
+                    Whitelisted Movies ({{ whitelist|length }})
+                </h4>
+                {% if whitelist %}
+                <ul class="override-list" id="whitelistMovies">
+                    {% for override in whitelist %}
+                    <li data-override-id="{{ override.id }}">
+                        {{ override.movie.title }}
+                        {% if override.movie.year %}({{ override.movie.year }}){% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p style="color: var(--text-muted); font-size: 0.9rem;">No whitelisted movies</p>
+                {% endif %}
+            </div>
+
+            <div class="override-box blacklist">
+                <h4>
+                    <i class="fas fa-ban"></i> 
+                    Blacklisted Movies ({{ blacklist|length }})
+                </h4>
+                {% if blacklist %}
+                <ul class="override-list" id="blacklistMovies">
+                    {% for override in blacklist %}
+                    <li data-override-id="{{ override.id }}">
+                        {{ override.movie.title }}
+                        {% if override.movie.year %}({{ override.movie.year }}){% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p style="color: var(--text-muted); font-size: 0.9rem;">No blacklisted movies</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-cog"></i> Channel Configuration</h3>
+            </div>
+            <div class="card-body">
+                <div class="config-grid">
+                    <div class="config-item">
+                        <div class="config-label">Active Period</div>
+                        <div class="config-value">Month {{ channel.start_month }} - {{ channel.end_month }}</div>
+                    </div>
+                    <div class="config-item">
+                        <div class="config-label">Filter Mode</div>
+                        <div class="config-value">{{ channel.filter_mode or 'OR' }}</div>
+                    </div>
+                    {% if channel.genre_filter %}
+                    <div class="config-item">
+                        <div class="config-label">Genre Filter</div>
+                        <div class="config-value">{{ channel.genre_filter }}</div>
+                    </div>
+                    {% endif %}
+                    {% if channel.rating_filter %}
+                    <div class="config-item">
+                        <div class="config-label">Rating Filter</div>
+                        <div class="config-value">{{ channel.rating_filter }}</div>
+                    </div>
+                    {% endif %}
+                    {% if channel.keywords %}
+                    <div class="config-item" style="grid-column: 1 / -1;">
+                        <div class="config-label">Keywords</div>
+                        <div class="config-value">{{ channel.keywords }}</div>
+                    </div>
+                    {% endif %}
+                    {% if channel.tmdb_collection_ids %}
+                    <div class="config-item">
+                        <div class="config-label">TMDB Collection IDs</div>
+                        <div class="config-value">{{ channel.tmdb_collection_ids }}</div>
+                    </div>
+                    {% endif %}
+                    {% if channel.tmdb_keywords %}
+                    <div class="config-item">
+                        <div class="config-label">TMDB Keywords</div>
+                        <div class="config-value">{{ channel.tmdb_keywords }}</div>
+                    </div>
+                    {% endif %}
+                    {% if channel.min_rating %}
+                    <div class="config-item">
+                        <div class="config-label">Minimum Rating</div>
+                        <div class="config-value">{{ channel.min_rating }}</div>
+                    </div>
+                    {% endif %}
+                    {% if channel.min_popularity %}
+                    <div class="config-item">
+                        <div class="config-label">Minimum Popularity</div>
+                        <div class="config-value">{{ channel.min_popularity }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card search-container">
+            <div class="card-header">
+                <h3><i class="fas fa-search"></i> Search All Movies</h3>
+            </div>
+            <div class="card-body">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Search for movies in your library..." autocomplete="off">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div id="searchResults"></div>
+            </div>
+        </div>
+
+        <div class="results-summary">
+            <i class="fas fa-film"></i>
+            <div>
+                <strong>{{ matching_movies|length }} movies match</strong> the filters for this channel
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-list"></i> Matching Movies</h3>
+            </div>
+            <div class="card-body">
+                {% if matching_movies %}
+                    <div class="movie-list">
+                        {% for movie in matching_movies %}
+                            <div class="movie-item" data-movie-id="{{ movie.id }}">
+                                <div class="movie-header">
+                                    <div>
+                                        <div class="movie-title">
+                                            {{ movie.title }}
+                                            {% if override_map.get(movie.id) %}
+                                                {% if override_map[movie.id] == 'whitelist' %}
+                                                    <span class="override-badge whitelist">
+                                                        <i class="fas fa-thumbs-up"></i> Whitelisted
+                                                    </span>
+                                                {% elif override_map[movie.id] == 'blacklist' %}
+                                                    <span class="override-badge blacklist">
+                                                        <i class="fas fa-ban"></i> Blacklisted
+                                                    </span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                        <div class="movie-meta">
+                                            {% if movie.year %}{{ movie.year }}{% endif %}
+                                        </div>
+                                    </div>
+                                    {% if movie.rating %}
+                                        <div class="movie-rating">{{ movie.rating }}</div>
+                                    {% endif %}
+                                </div>
+
+                                {% if movie.genre %}
+                                    <div class="movie-genres">
+                                        {% for genre in movie.genre.split(',') %}
+                                            <span class="genre-badge">{{ genre.strip() }}</span>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+
+                                <div class="match-reasons">
+                                    <div class="match-reasons-title">Match Reasons:</div>
+                                    <div class="match-tags">
+                                        {% set genre_filters = channel.genre_filter.split(',') if channel.genre_filter else [] %}
+                                        {% set keywords = channel.keywords.split(',') if channel.keywords else [] %}
+                                        {% set movie_genre_lower = movie.genre.lower() %}
+                                        {% set title_lower = movie.title.lower() %}
+                                        {% set summary_lower = movie.summary.lower() if movie.summary else '' %}
+                                        
+                                        {% set genre_matched = namespace(value=false) %}
+                                        {% for gf in genre_filters %}
+                                            {% if gf.strip().lower() in movie_genre_lower %}
+                                                {% set genre_matched.value = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if genre_matched.value %}
+                                            <span class="match-tag match-tag-genre">
+                                                <i class="fas fa-tag"></i> Genre Match
+                                            </span>
+                                        {% endif %}
+                                        
+                                        {% set keyword_matched = namespace(value=false) %}
+                                        {% for kw in keywords %}
+                                            {% if kw.strip().lower() in title_lower or kw.strip().lower() in summary_lower %}
+                                                {% set keyword_matched.value = true %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        
+                                        {% if keyword_matched.value %}
+                                            <span class="match-tag match-tag-keyword">
+                                                <i class="fas fa-key"></i> Keyword Match
+                                            </span>
+                                        {% endif %}
+                                        
+                                        {% if channel.rating_filter %}
+                                            {% set allowed_ratings = channel.rating_filter.split(',') %}
+                                            {% if movie.rating and movie.rating.upper() in allowed_ratings|map('upper')|list %}
+                                                <span class="match-tag match-tag-rating">
+                                                    <i class="fas fa-star"></i> Rating Match
+                                                </span>
+                                            {% endif %}
+                                        {% endif %}
+                                        
+                                        {% if not genre_matched.value and not keyword_matched.value %}
+                                            <span class="match-tag match-tag-whitelist">
+                                                <i class="fas fa-check-circle"></i> Whitelist or Other Match
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="movie-actions">
+                                    {% set current_override = override_map.get(movie.id) %}
+                                    {% if current_override %}
+                                        <button class="btn btn-sm btn-warning" onclick="removeOverride({{ movie.id }}, '{{ movie.title|replace("'", "\\'") }}')">
+                                            <i class="fas fa-times"></i> Remove Override
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-sm btn-success" onclick="addOverride({{ movie.id }}, 'whitelist', '{{ movie.title|replace("'", "\\'") }}')">
+                                            <i class="fas fa-thumbs-up"></i> Add to Whitelist
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="addOverride({{ movie.id }}, 'blacklist', '{{ movie.title|replace("'", "\\'") }}')">
+                                            <i class="fas fa-ban"></i> Add to Blacklist
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-film"></i>
+                        <h3>No Matching Movies</h3>
+                        <p>No movies match the current filter configuration.</p>
+                        <p>Try adjusting the filters or adding more keywords.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="suggestionsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-lightbulb"></i> Smart Filter Suggestions</h3>
+                <button class="modal-close" onclick="closeSuggestionsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: var(--text-secondary);">
+                    This movie doesn't match the current filters. Would you like to add these filters to include similar movies?
+                </p>
+                <div id="suggestionsContainer"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSuggestionsModal()">
+                    Skip & Whitelist Only
+                </button>
+                <button class="btn btn-primary" onclick="applySuggestions()">
+                    <i class="fas fa-check"></i> Apply Selected & Whitelist
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const channelId = {{ channel.id }};
+        const csrfToken = '{{ csrf_token() }}';
+        let currentMovieForSuggestions = null;
+        let searchTimeout = null;
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            alertContainer.appendChild(alert);
+
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => searchMovies(query), 300);
+        });
+
+        async function searchMovies(query) {
+            try {
+                const response = await fetch(`/admin/holiday-channels/${channelId}/search-movies?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                displaySearchResults(data.movies);
+            } catch (error) {
+                console.error('Error searching movies:', error);
+                showAlert('Error searching movies', 'error');
+            }
+        }
+
+        function displaySearchResults(movies) {
+            const container = document.getElementById('searchResults');
+            
+            if (movies.length === 0) {
+                container.innerHTML = `
+                    <div class="search-results-empty">
+                        <i class="fas fa-film"></i>
+                        <p>No movies found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = `
+                <div class="movie-list">
+                    ${movies.map(movie => `
+                        <div class="movie-item" data-movie-id="${movie.id}">
+                            <div class="movie-header">
+                                <div>
+                                    <div class="movie-title">
+                                        ${movie.title}
+                                        ${movie.matches_filter ? 
+                                            '<span class="match-badge matches"><i class="fas fa-check"></i> Matches Filters</span>' : 
+                                            '<span class="match-badge no-match">No Match</span>'
+                                        }
+                                    </div>
+                                    <div class="movie-meta">
+                                        ${movie.year || 'Unknown Year'}
+                                    </div>
+                                </div>
+                                ${movie.rating ? `<div class="movie-rating">${movie.rating}</div>` : ''}
+                            </div>
+                            ${movie.genre ? `
+                                <div class="movie-genres">
+                                    ${movie.genre.split(',').map(g => `<span class="genre-badge">${g.trim()}</span>`).join('')}
+                                </div>
+                            ` : ''}
+                            <div class="movie-actions">
+                                <button class="btn btn-sm btn-success" onclick="addOverride(${movie.id}, 'whitelist', '${movie.title.replace(/'/g, "\\'")}', ${movie.matches_filter})">
+                                    <i class="fas fa-thumbs-up"></i> Add to Whitelist
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="addOverride(${movie.id}, 'blacklist', '${movie.title.replace(/'/g, "\\'")}', ${movie.matches_filter})">
+                                    <i class="fas fa-ban"></i> Add to Blacklist
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        async function addOverride(movieId, overrideType, movieTitle, matchesFilter = true) {
+            if (overrideType === 'whitelist' && !matchesFilter) {
+                currentMovieForSuggestions = { id: movieId, title: movieTitle, type: overrideType };
+                await showSuggestionsModal(movieId);
+                return;
+            }
+
+            await executeAddOverride(movieId, overrideType, movieTitle);
+        }
+
+        async function executeAddOverride(movieId, overrideType, movieTitle) {
+            try {
+                const response = await fetch(`/admin/holiday-channels/${channelId}/override/add`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        movie_id: movieId,
+                        override_type: overrideType
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`"${movieTitle}" has been ${overrideType}ed successfully!`, 'success');
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showAlert(data.error || 'Failed to add override', 'error');
+                }
+            } catch (error) {
+                console.error('Error adding override:', error);
+                showAlert('An error occurred while adding the override', 'error');
+            }
+        }
+
+        async function showSuggestionsModal(movieId) {
+            try {
+                const response = await fetch(`/admin/holiday-channels/${channelId}/suggest-filters`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ movie_id: movieId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.suggestions && data.suggestions.length > 0) {
+                    displaySuggestions(data.suggestions);
+                    document.getElementById('suggestionsModal').classList.add('show');
+                } else {
+                    await executeAddOverride(currentMovieForSuggestions.id, currentMovieForSuggestions.type, currentMovieForSuggestions.title);
+                }
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+                await executeAddOverride(currentMovieForSuggestions.id, currentMovieForSuggestions.type, currentMovieForSuggestions.title);
+            }
+        }
+
+        function displaySuggestions(suggestions) {
+            const container = document.getElementById('suggestionsContainer');
+            const html = suggestions.map((suggestion, index) => `
+                <div class="suggestion-item">
+                    <input type="checkbox" id="suggestion-${index}" checked data-type="${suggestion.type}" data-value="${suggestion.value}">
+                    <label for="suggestion-${index}">${suggestion.label}</label>
+                    <span class="suggestion-type ${suggestion.type}">${suggestion.type}</span>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+
+        function closeSuggestionsModal() {
+            if (currentMovieForSuggestions) {
+                executeAddOverride(currentMovieForSuggestions.id, currentMovieForSuggestions.type, currentMovieForSuggestions.title);
+                currentMovieForSuggestions = null;
+            }
+            document.getElementById('suggestionsModal').classList.remove('show');
+        }
+
+        async function applySuggestions() {
+            const checkboxes = document.querySelectorAll('#suggestionsContainer input[type="checkbox"]:checked');
+            const suggestions = Array.from(checkboxes).map(cb => ({
+                type: cb.dataset.type,
+                value: cb.dataset.value
+            }));
+
+            if (suggestions.length === 0) {
+                closeSuggestionsModal();
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/holiday-channels/${channelId}/apply-suggestions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({ suggestions })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(data.message, 'success');
+                    document.getElementById('suggestionsModal').classList.remove('show');
+                    
+                    if (currentMovieForSuggestions) {
+                        await executeAddOverride(currentMovieForSuggestions.id, currentMovieForSuggestions.type, currentMovieForSuggestions.title);
+                        currentMovieForSuggestions = null;
+                    }
+                } else {
+                    showAlert(data.error || 'Failed to apply suggestions', 'error');
+                }
+            } catch (error) {
+                console.error('Error applying suggestions:', error);
+                showAlert('An error occurred while applying suggestions', 'error');
+            }
+        }
+
+        async function removeOverride(movieId, movieTitle) {
+            const movieItem = document.querySelector(`[data-movie-id="${movieId}"]`);
+            const overrideIdElement = document.querySelector(`[data-override-id][data-movie-id="${movieId}"]`);
+            
+            let overrideId = null;
+            
+            {% for override in whitelist + blacklist %}
+            if ({{ override.movie_id }} === movieId) {
+                overrideId = {{ override.id }};
+            }
+            {% endfor %}
+
+            if (!overrideId) {
+                showAlert('Override not found', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/holiday-channels/${channelId}/override/${overrideId}/delete`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(`Override removed for "${movieTitle}"`, 'success');
+                    
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showAlert(data.error || 'Failed to remove override', 'error');
+                }
+            } catch (error) {
+                console.error('Error removing override:', error);
+                showAlert('An error occurred while removing the override', 'error');
+            }
+        }
+
+        document.getElementById('suggestionsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'suggestionsModal') {
+                closeSuggestionsModal();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -11,9 +11,6 @@ COPY . .
 # Create data directory for persistent storage
 RUN mkdir -p /data
 
-# Declare volume for persistent data (database, configs)
-VOLUME ["/data"]
-
 ENV FLASK_APP=app.py
 ENV PYTHONUNBUFFERED=1
 ENV DATA_DIR=/data

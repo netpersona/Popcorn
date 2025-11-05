@@ -22,6 +22,7 @@ class Movie(Base):
     audience_rating = Column(Float)
     content_rating = Column(String)
     cast = Column(String)
+    library_name = Column(String)
     
     schedules = relationship('Schedule', back_populates='movie')
     
@@ -55,9 +56,30 @@ class HolidayChannel(Base):
     genre_filter = Column(String)
     keywords = Column(String)
     rating_filter = Column(String)
+    filter_mode = Column(String, default='AND')
+    tmdb_collection_ids = Column(String)
+    tmdb_keywords = Column(String)
+    min_rating = Column(Float)
+    min_popularity = Column(Float)
     
     def __repr__(self):
         return f"<HolidayChannel(name='{self.name}')>"
+
+class MovieOverride(Base):
+    __tablename__ = 'movie_overrides'
+    
+    id = Column(Integer, primary_key=True)
+    channel_name = Column(String, nullable=False)
+    movie_id = Column(Integer, ForeignKey('movies.id'), nullable=False)
+    override_type = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    movie = relationship('Movie')
+    
+    __table_args__ = (UniqueConstraint('channel_name', 'movie_id', name='_channel_movie_uc'),)
+    
+    def __repr__(self):
+        return f"<MovieOverride(channel='{self.channel_name}', type='{self.override_type}')>"
 
 class Settings(Base):
     __tablename__ = 'settings'
@@ -70,6 +92,9 @@ class Settings(Base):
     plex_client = Column(String)
     enable_channel_numbers = Column(Boolean, default=True)
     current_glow_brightness = Column(Integer, default=100)
+    tmdb_api_key = Column(String)
+    selected_movie_libraries = Column(Text)
+    plex_machine_identifier = Column(String)
     
     def __repr__(self):
         return f"<Settings(frequency='{self.shuffle_frequency}')>"

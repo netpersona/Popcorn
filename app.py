@@ -6,7 +6,7 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for, f
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_wtf.csrf import CSRFProtect
 from dotenv import load_dotenv
-from models import init_db, get_session, Settings, User, Movie
+from models import init_db, get_session, Settings, User, Movie, HolidayChannel, MovieOverride
 from plex_api import PlexAPI
 from scheduler import ScheduleGenerator
 from auth import PlexOAuth, create_or_update_plex_user
@@ -144,6 +144,36 @@ def run_migrations():
         else:
             logger.warning(f"Error adding current_glow_brightness: {e}")
     
+    # Add TMDB API key to settings table if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE settings ADD COLUMN tmdb_api_key VARCHAR")
+        logger.info("Added column: tmdb_api_key to settings")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e).lower() or "no such table" in str(e).lower():
+            pass
+        else:
+            logger.warning(f"Error adding tmdb_api_key: {e}")
+    
+    # Add selected movie libraries to settings table if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE settings ADD COLUMN selected_movie_libraries TEXT")
+        logger.info("Added column: selected_movie_libraries to settings")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e).lower() or "no such table" in str(e).lower():
+            pass
+        else:
+            logger.warning(f"Error adding selected_movie_libraries: {e}")
+    
+    # Add Plex machine identifier to settings table if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE settings ADD COLUMN plex_machine_identifier VARCHAR")
+        logger.info("Added column: plex_machine_identifier to settings")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e).lower() or "no such table" in str(e).lower():
+            pass
+        else:
+            logger.warning(f"Error adding plex_machine_identifier: {e}")
+    
     # Add user preference columns to users table if they don't exist
     user_columns = [
         ('enable_crt_mode', 'BOOLEAN DEFAULT 0'),
@@ -171,7 +201,8 @@ def run_migrations():
         ('audience_rating', 'REAL'),
         ('content_rating', 'VARCHAR'),
         ('cast', 'VARCHAR'),
-        ('art_url', 'VARCHAR')
+        ('art_url', 'VARCHAR'),
+        ('library_name', 'VARCHAR')
     ]
     
     for column_name, column_def in movie_columns:
@@ -320,10 +351,35 @@ def sync_movies():
         return
     
     logger.info("Syncing movies from Plex...")
-    movie_data = plex_api.fetch_movies()
     
+    # Get selected libraries from settings
     from models import Movie
     session = get_session()
+    settings = session.query(Settings).first()
+    
+    selected_libraries = None
+    auto_selected = False
+    if settings and settings.selected_movie_libraries:
+        # Parse comma-separated library names
+        selected_libraries = [lib.strip() for lib in settings.selected_movie_libraries.split(',') if lib.strip()]
+        logger.info(f"Syncing from selected libraries: {selected_libraries}")
+    else:
+        logger.info("No library filter set, syncing from all movie libraries")
+        auto_selected = True
+    
+    # Fetch movies with library filter
+    movie_data = plex_api.fetch_movies(selected_libraries=selected_libraries)
+    
+    # Auto-save library selection on first sync
+    if auto_selected and settings:
+        try:
+            available_libraries = plex_api.get_movie_libraries()
+            if available_libraries:
+                settings.selected_movie_libraries = ','.join(available_libraries)
+                session.commit()
+                logger.info(f"Auto-selected all {len(available_libraries)} movie libraries on first sync: {available_libraries}")
+        except Exception as e:
+            logger.error(f"Error auto-selecting libraries: {e}")
     
     existing_combinations = {(m.plex_id, m.genre) for m in session.query(Movie).all()}
     
@@ -348,7 +404,8 @@ def sync_movies():
                     summary=data['summary'],
                     poster_url=data.get('poster_url'),
                     art_url=data.get('art_url'),
-                    cast=data.get('cast')
+                    cast=data.get('cast'),
+                    library_name=data.get('library_name')
                 )
                 session.add(movie)
                 new_count += 1
@@ -370,6 +427,9 @@ def sync_movies():
                         changed = True
                     if existing_movie.art_url != data.get('art_url'):
                         existing_movie.art_url = data.get('art_url')
+                        changed = True
+                    if existing_movie.library_name != data.get('library_name'):
+                        existing_movie.library_name = data.get('library_name')
                         changed = True
                     if changed:
                         update_count += 1
@@ -525,25 +585,33 @@ def check_plex_pin(pin_id):
     
     db_session = get_session()
     
-    # Get configured Plex URL from settings
+    # Get configured Plex server machine identifier from settings
     settings = db_session.query(Settings).first()
-    if not settings or not settings.plex_url:
+    if not settings or not settings.plex_machine_identifier:
         return jsonify({
             'success': False,
             'status': 'error',
             'message': 'Plex server not configured. Contact administrator.'
         })
     
-    # Verify user has library access
-    from plex_api import PlexAPI
-    has_access, error_msg = PlexAPI.verify_library_access(settings.plex_url, auth_token)
+    # Verify user has access using machine identifier matching
+    # This works for both internal and external users
+    user_servers = plex_oauth.get_user_servers(auth_token)
+    admin_machine_id = settings.plex_machine_identifier
+    
+    user_server_ids = [server['machineIdentifier'] for server in user_servers]
+    has_access = admin_machine_id in user_server_ids
     
     if not has_access:
+        logger.warning(f"User {user_info['username']} does not have access to server {admin_machine_id}")
+        logger.info(f"User has access to servers: {user_server_ids}")
         return jsonify({
             'success': False,
             'status': 'no_library_access',
-            'message': f'You do not have access to this Plex server. {error_msg or ""}'
+            'message': 'You do not have access to this Plex server. Please ask the administrator to share the server with your Plex account.'
         })
+    
+    logger.info(f"User {user_info['username']} verified with access to server {admin_machine_id}")
     
     # Smart merge logic: plex_id → email → create new
     user = None
@@ -984,10 +1052,7 @@ def play(movie_id):
         logger.info(f"Returning web_url to client: {result}")
         return jsonify({'success': True, 'message': message, 'web_url': result, 'offset_min': offset_min})
     else:
-        # Log the detailed error for debugging
-        logger.warning(f"Playback failure for user {current_user.id} ({current_user.username}). Error: {result}")
-        # Return only a generic error to the client
-        return jsonify({'success': False, 'message': "Failed to start playback. Please try again or contact support.", 'offset_min': 0})
+        return jsonify({'success': success, 'message': result, 'offset_min': offset_min if success else 0})
 
 @app.route('/api/favorite/<int:movie_id>', methods=['POST'])
 @login_required
@@ -1025,13 +1090,13 @@ def settings():
         flash('Only administrators can access settings', 'error')
         return redirect(url_for('guide'))
     
-    session = get_session()
-    settings_obj = session.query(Settings).first()
+    db_session = get_session()
+    settings_obj = db_session.query(Settings).first()
     
     if not settings_obj:
         settings_obj = Settings(shuffle_frequency='weekly')
-        session.add(settings_obj)
-        session.commit()
+        db_session.add(settings_obj)
+        db_session.commit()
     
     if request.method == 'POST':
         if 'plex_url' in request.form:
@@ -1040,16 +1105,36 @@ def settings():
             settings_obj.plex_url = request.form.get('plex_url', '').strip() or None
             settings_obj.plex_token = request.form.get('plex_token', '').strip() or None
             # plex_client is now per-user setting, not admin setting
-            session.commit()
+            db_session.commit()
             
             try:
                 plex_api = PlexAPI(db_settings=settings_obj)
                 logger.info("Plex API reconnected with new settings")
                 
+                # Capture and store the Plex server's machine identifier
+                if plex_api.plex_server:
+                    machine_id = plex_api.plex_server.machineIdentifier
+                    settings_obj.plex_machine_identifier = machine_id
+                    db_session.commit()
+                    logger.info(f"Stored Plex machine identifier: {machine_id}")
+                
+                # Get available libraries
+                available_libraries = plex_api.get_movie_libraries()
+                if available_libraries:
+                    # Only auto-select all libraries on first connect
+                    if not settings_obj.selected_movie_libraries:
+                        settings_obj.selected_movie_libraries = ','.join(available_libraries)
+                        db_session.commit()
+                        logger.info(f"Auto-selected all {len(available_libraries)} movie libraries on first connection: {available_libraries}")
+                    else:
+                        logger.info(f"Preserving existing library selection. Use library settings to modify selection.")
+                else:
+                    logger.warning("No movie libraries found on Plex server")
+                
                 sync_movies()
                 scheduler.generate_all_schedules(force=True)
                 
-                movie_count = session.query(Movie).count()
+                movie_count = db_session.query(Movie).count()
                 flash(f'Plex connected successfully! Synced {movie_count} movies and generated schedules.', 'success')
                 return redirect(url_for('settings', plex_saved=1))
             except Exception as e:
@@ -1057,6 +1142,71 @@ def settings():
                 plex_api = None
                 flash(f'Settings saved, but connection failed: {str(e)}', 'error')
                 return redirect(url_for('settings', plex_error=1))
+        elif 'tmdb_api_key' in request.form:
+            tmdb_api_key = request.form.get('tmdb_api_key', '').strip() or None
+            settings_obj.tmdb_api_key = tmdb_api_key
+            db_session.commit()
+            
+            if tmdb_api_key:
+                flash('TMDB API key saved successfully!', 'success')
+            else:
+                flash('TMDB API key removed.', 'success')
+            return redirect(url_for('settings'))
+        elif 'library_selection' in request.form:
+            # Handle library selection changes
+            if not plex_api:
+                flash('Plex is not connected', 'error')
+                return redirect(url_for('settings'))
+            
+            # Get all available libraries
+            available_libraries = plex_api.get_movie_libraries()
+            
+            # Get selected libraries from form (checkboxes)
+            selected_libraries = request.form.getlist('selected_libraries')
+            
+            # Validate at least one library is selected
+            if not selected_libraries:
+                flash('You must select at least one library', 'error')
+                return redirect(url_for('settings'))
+            
+            # Validate all selected libraries exist
+            invalid_libraries = [lib for lib in selected_libraries if lib not in available_libraries]
+            if invalid_libraries:
+                flash(f'Invalid libraries selected: {", ".join(invalid_libraries)}', 'error')
+                return redirect(url_for('settings'))
+            
+            # Get previously selected libraries
+            old_selected = []
+            if settings_obj.selected_movie_libraries:
+                old_selected = [lib.strip() for lib in settings_obj.selected_movie_libraries.split(',') if lib.strip()]
+            
+            # Update settings
+            settings_obj.selected_movie_libraries = ','.join(selected_libraries)
+            db_session.commit()
+            logger.info(f"Library selection updated: {selected_libraries}")
+            
+            # Find deselected libraries
+            deselected_libraries = [lib for lib in old_selected if lib not in selected_libraries]
+            
+            # Delete movies from deselected libraries
+            if deselected_libraries:
+                deleted_count = 0
+                for library_name in deselected_libraries:
+                    movies_to_delete = db_session.query(Movie).filter_by(library_name=library_name).all()
+                    deleted_count += len(movies_to_delete)
+                    for movie in movies_to_delete:
+                        db_session.delete(movie)
+                db_session.commit()
+                logger.info(f"Deleted {deleted_count} movies from deselected libraries: {deselected_libraries}")
+            
+            # Re-sync movies from selected libraries
+            sync_movies()
+            
+            # Regenerate schedules
+            scheduler.generate_all_schedules(force=True)
+            
+            flash(f'Library selection updated! Syncing from {len(selected_libraries)} libraries.', 'success')
+            return redirect(url_for('settings'))
         else:
             frequency = request.form.get('shuffle_frequency')
             brightness = request.form.get('current_glow_brightness')
@@ -1072,7 +1222,7 @@ def settings():
                 except ValueError:
                     pass
             
-            session.commit()
+            db_session.commit()
             
             if request.form.get('reshuffle_now'):
                 scheduler.generate_all_schedules(force=True)
@@ -1090,7 +1240,21 @@ def settings():
     user_theme = current_user.theme if current_user.theme else 'plex'
     theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
     
-    return render_template('settings.html', settings=settings_obj, reshuffled=reshuffled, plex_saved=plex_saved, theme_colors=theme_colors)
+    channels = db_session.query(HolidayChannel).order_by(HolidayChannel.name).all()
+    
+    # Get available and selected movie libraries
+    available_libraries = []
+    selected_libraries = []
+    if plex_api:
+        try:
+            available_libraries = plex_api.get_movie_libraries()
+            if settings_obj.selected_movie_libraries:
+                selected_libraries = [lib.strip() for lib in settings_obj.selected_movie_libraries.split(',') if lib.strip()]
+            logger.info(f"Available libraries: {available_libraries}, Selected: {selected_libraries}")
+        except Exception as e:
+            logger.error(f"Error fetching movie libraries: {e}")
+    
+    return render_template('settings.html', settings=settings_obj, reshuffled=reshuffled, plex_saved=plex_saved, theme_colors=theme_colors, holiday_channels=channels, available_libraries=available_libraries, selected_libraries=selected_libraries)
 
 @app.route('/settings/test-plex', methods=['POST'])
 @login_required
@@ -1117,6 +1281,41 @@ def test_plex_connection():
         return jsonify({
             'success': False,
             'message': 'Connection failed: An internal error occurred while testing the Plex connection.'
+        })
+
+@app.route('/admin/test-tmdb', methods=['POST'])
+@login_required
+def test_tmdb_connection():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'message': 'Admin access required'}), 403
+    
+    tmdb_api_key = request.form.get('tmdb_api_key', '').strip()
+    
+    if not tmdb_api_key:
+        return jsonify({'success': False, 'message': 'TMDB API key is required'})
+    
+    try:
+        from tmdb_api import TMDBAPI
+        test_tmdb = TMDBAPI(api_key=tmdb_api_key)
+        
+        # Make a simple test request to validate the API key
+        test_result = test_tmdb._make_request('configuration')
+        
+        if test_result:
+            return jsonify({
+                'success': True,
+                'message': 'Successfully connected to TMDB API!'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Invalid API key or connection failed'
+            })
+    except Exception as e:
+        logger.error(f"Error testing TMDB connection: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': f'Connection failed: {str(e)}'
         })
 
 @app.route('/api/clients')
@@ -1553,6 +1752,547 @@ def sync():
     scheduler.generate_all_schedules(force=True)
     flash('Library synced and schedules regenerated', 'success')
     return redirect(url_for('guide'))
+
+@app.route('/admin/holiday-channels/create', methods=['GET', 'POST'])
+@login_required
+def create_holiday_channel():
+    if not current_user.is_admin:
+        flash('Only administrators can access this page', 'error')
+        return redirect(url_for('guide'))
+    
+    from theme_service import ThemeService
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
+    
+    if request.method == 'POST':
+        db = get_session()
+        try:
+            name = request.form.get('name', '').strip()
+            start_month = int(request.form.get('start_month', 1))
+            end_month = int(request.form.get('end_month', 1))
+            
+            if not name:
+                flash('Channel name is required', 'error')
+                return redirect(url_for('create_holiday_channel'))
+            
+            if start_month < 1 or start_month > 12 or end_month < 1 or end_month > 12:
+                flash('Months must be between 1 and 12', 'error')
+                return redirect(url_for('create_holiday_channel'))
+            
+            existing = db.query(HolidayChannel).filter_by(name=name).first()
+            if existing:
+                flash('A channel with this name already exists', 'error')
+                return redirect(url_for('create_holiday_channel'))
+            
+            genre_filter = request.form.get('genre_filter', '').strip() or None
+            keywords = request.form.get('keywords', '').strip() or None
+            filter_mode = request.form.get('filter_mode', 'OR')
+            
+            rating_filters = request.form.getlist('rating_filter')
+            rating_filter = ','.join(rating_filters) if rating_filters else None
+            
+            tmdb_collection_ids = request.form.get('tmdb_collection_ids', '').strip() or None
+            tmdb_keywords = request.form.get('tmdb_keywords', '').strip() or None
+            min_rating = request.form.get('min_rating', '').strip()
+            min_popularity = request.form.get('min_popularity', '').strip()
+            
+            channel = HolidayChannel(
+                name=name,
+                start_month=start_month,
+                end_month=end_month,
+                genre_filter=genre_filter,
+                keywords=keywords,
+                rating_filter=rating_filter,
+                filter_mode=filter_mode,
+                tmdb_collection_ids=tmdb_collection_ids,
+                tmdb_keywords=tmdb_keywords,
+                min_rating=float(min_rating) if min_rating else None,
+                min_popularity=float(min_popularity) if min_popularity else None
+            )
+            
+            db.add(channel)
+            db.commit()
+            
+            scheduler.generate_all_schedules(force=True)
+            
+            flash(f'Holiday channel "{name}" created successfully', 'success')
+            return redirect(url_for('settings') + '#holiday-channels')
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error creating holiday channel: {e}")
+            flash(f'Error creating channel: {str(e)}', 'error')
+            return redirect(url_for('create_holiday_channel'))
+    
+    db = get_session()
+    settings_obj = db.query(Settings).first()
+    has_tmdb = settings_obj and settings_obj.tmdb_api_key
+    
+    return render_template('edit_holiday_channel.html', 
+                         channel=None,
+                         has_tmdb=has_tmdb,
+                         theme_colors=theme_colors)
+
+@app.route('/admin/holiday-channels/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_holiday_channel(id):
+    if not current_user.is_admin:
+        flash('Only administrators can access this page', 'error')
+        return redirect(url_for('guide'))
+    
+    from theme_service import ThemeService
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        flash('Channel not found', 'error')
+        return redirect(url_for('settings') + '#holiday-channels')
+    
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name', '').strip()
+            start_month = int(request.form.get('start_month', 1))
+            end_month = int(request.form.get('end_month', 1))
+            
+            if not name:
+                flash('Channel name is required', 'error')
+                return redirect(url_for('edit_holiday_channel', id=id))
+            
+            if start_month < 1 or start_month > 12 or end_month < 1 or end_month > 12:
+                flash('Months must be between 1 and 12', 'error')
+                return redirect(url_for('edit_holiday_channel', id=id))
+            
+            existing = db.query(HolidayChannel).filter(
+                HolidayChannel.name == name,
+                HolidayChannel.id != id
+            ).first()
+            if existing:
+                flash('A channel with this name already exists', 'error')
+                return redirect(url_for('edit_holiday_channel', id=id))
+            
+            channel.name = name
+            channel.start_month = start_month
+            channel.end_month = end_month
+            channel.genre_filter = request.form.get('genre_filter', '').strip() or None
+            channel.keywords = request.form.get('keywords', '').strip() or None
+            channel.filter_mode = request.form.get('filter_mode', 'OR')
+            
+            rating_filters = request.form.getlist('rating_filter')
+            channel.rating_filter = ','.join(rating_filters) if rating_filters else None
+            
+            channel.tmdb_collection_ids = request.form.get('tmdb_collection_ids', '').strip() or None
+            channel.tmdb_keywords = request.form.get('tmdb_keywords', '').strip() or None
+            
+            min_rating = request.form.get('min_rating', '').strip()
+            min_popularity = request.form.get('min_popularity', '').strip()
+            channel.min_rating = float(min_rating) if min_rating else None
+            channel.min_popularity = float(min_popularity) if min_popularity else None
+            
+            db.commit()
+            
+            scheduler.generate_all_schedules(force=True)
+            
+            flash(f'Holiday channel "{name}" updated successfully', 'success')
+            return redirect(url_for('settings') + '#holiday-channels')
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Error updating holiday channel: {e}")
+            flash(f'Error updating channel: {str(e)}', 'error')
+            return redirect(url_for('edit_holiday_channel', id=id))
+    
+    settings_obj = db.query(Settings).first()
+    has_tmdb = settings_obj and settings_obj.tmdb_api_key
+    
+    return render_template('edit_holiday_channel.html', 
+                         channel=channel,
+                         has_tmdb=has_tmdb,
+                         theme_colors=theme_colors)
+
+@app.route('/admin/holiday-channels/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_holiday_channel(id):
+    if not current_user.is_admin:
+        flash('Only administrators can access this page', 'error')
+        return redirect(url_for('guide'))
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        flash('Channel not found', 'error')
+        return redirect(url_for('settings') + '#holiday-channels')
+    
+    try:
+        name = channel.name
+        db.delete(channel)
+        db.commit()
+        
+        scheduler.generate_all_schedules(force=True)
+        
+        flash(f'Holiday channel "{name}" deleted successfully', 'success')
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting holiday channel: {e}")
+        flash(f'Error deleting channel: {str(e)}', 'error')
+    
+    return redirect(url_for('settings') + '#holiday-channels')
+
+@app.route('/admin/holiday-channels/<int:id>/test')
+@login_required
+def test_holiday_channel(id):
+    if not current_user.is_admin:
+        flash('Only administrators can access this page', 'error')
+        return redirect(url_for('guide'))
+    
+    from theme_service import ThemeService
+    themes = ThemeService.get_all_themes_for_user(current_user.id)
+    user_theme = current_user.theme if current_user.theme else 'plex'
+    theme_colors = themes.get(user_theme, themes.get('plex', {})).get('colors', {})
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        flash('Channel not found', 'error')
+        return redirect(url_for('settings') + '#holiday-channels')
+    
+    matching_movies = scheduler.get_movies_for_holiday_channel(channel)
+    
+    overrides = db.query(MovieOverride).filter_by(channel_name=channel.name).all()
+    whitelist = [o for o in overrides if o.override_type == 'whitelist']
+    blacklist = [o for o in overrides if o.override_type == 'blacklist']
+    
+    override_map = {}
+    for override in overrides:
+        override_map[override.movie_id] = override.override_type
+    
+    return render_template('test_holiday_channel.html',
+                         channel=channel,
+                         matching_movies=matching_movies,
+                         whitelist=whitelist,
+                         blacklist=blacklist,
+                         override_map=override_map,
+                         theme_colors=theme_colors)
+
+@app.route('/admin/holiday-channels/<int:id>/overrides')
+@login_required
+def get_channel_overrides(id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        return jsonify({'error': 'Channel not found'}), 404
+    
+    overrides = db.query(MovieOverride).filter_by(channel_name=channel.name).all()
+    
+    result = {
+        'whitelist': [],
+        'blacklist': []
+    }
+    
+    for override in overrides:
+        movie = override.movie
+        override_data = {
+            'id': override.id,
+            'movie_id': movie.id,
+            'title': movie.title,
+            'year': movie.year,
+            'genre': movie.genre
+        }
+        
+        if override.override_type == 'whitelist':
+            result['whitelist'].append(override_data)
+        else:
+            result['blacklist'].append(override_data)
+    
+    return jsonify(result)
+
+@app.route('/admin/holiday-channels/<int:id>/override/add', methods=['POST'])
+@login_required
+def add_channel_override(id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        return jsonify({'error': 'Channel not found'}), 404
+    
+    data = request.get_json()
+    movie_id = data.get('movie_id')
+    override_type = data.get('override_type')
+    
+    if not movie_id or not override_type:
+        return jsonify({'error': 'Missing movie_id or override_type'}), 400
+    
+    if override_type not in ['whitelist', 'blacklist']:
+        return jsonify({'error': 'Invalid override_type. Must be whitelist or blacklist'}), 400
+    
+    movie = db.query(Movie).filter_by(id=movie_id).first()
+    if not movie:
+        return jsonify({'error': 'Movie not found'}), 404
+    
+    try:
+        existing = db.query(MovieOverride).filter_by(
+            channel_name=channel.name,
+            movie_id=movie_id
+        ).first()
+        
+        if existing:
+            existing.override_type = override_type
+            db.commit()
+            logger.info(f"Updated override for movie '{movie.title}' in channel '{channel.name}' to {override_type}")
+        else:
+            override = MovieOverride(
+                channel_name=channel.name,
+                movie_id=movie_id,
+                override_type=override_type
+            )
+            db.add(override)
+            db.commit()
+            logger.info(f"Added {override_type} override for movie '{movie.title}' in channel '{channel.name}'")
+        
+        scheduler.generate_all_schedules(force=True)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Movie {override_type}ed successfully',
+            'movie_title': movie.title,
+            'override_type': override_type
+        })
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error adding override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/holiday-channels/<int:id>/override/<int:override_id>/delete', methods=['POST'])
+@login_required
+def delete_channel_override(id, override_id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        return jsonify({'error': 'Channel not found'}), 404
+    
+    override = db.query(MovieOverride).filter_by(
+        id=override_id,
+        channel_name=channel.name
+    ).first()
+    
+    if not override:
+        return jsonify({'error': 'Override not found'}), 404
+    
+    try:
+        movie_title = override.movie.title
+        db.delete(override)
+        db.commit()
+        
+        scheduler.generate_all_schedules(force=True)
+        
+        logger.info(f"Removed override for movie '{movie_title}' from channel '{channel.name}'")
+        
+        return jsonify({
+            'success': True,
+            'message': f'Override removed for {movie_title}'
+        })
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting override: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/holiday-channels/<int:id>/search-movies')
+@login_required
+def search_channel_movies(id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        return jsonify({'error': 'Channel not found'}), 404
+    
+    query = request.args.get('q', '').strip()
+    if not query or len(query) < 2:
+        return jsonify({'movies': []})
+    
+    matching_movies = scheduler.get_movies_for_holiday_channel(channel)
+    matching_movie_ids = {movie.id for movie in matching_movies}
+    
+    query_lower = query.lower()
+    movies = db.query(Movie).filter(
+        Movie.title.ilike(f'%{query}%')
+    ).limit(50).all()
+    
+    results = []
+    for movie in movies:
+        results.append({
+            'id': movie.id,
+            'title': movie.title,
+            'year': movie.year,
+            'rating': movie.rating,
+            'genre': movie.genre,
+            'matches_filter': movie.id in matching_movie_ids
+        })
+    
+    return jsonify({'movies': results})
+
+@app.route('/admin/holiday-channels/<int:id>/suggest-filters', methods=['POST'])
+@login_required
+def suggest_channel_filters(id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        return jsonify({'error': 'Channel not found'}), 404
+    
+    data = request.get_json()
+    movie_id = data.get('movie_id')
+    
+    if not movie_id:
+        return jsonify({'error': 'Missing movie_id'}), 400
+    
+    movie = db.query(Movie).filter_by(id=movie_id).first()
+    if not movie:
+        return jsonify({'error': 'Movie not found'}), 404
+    
+    suggestions = []
+    
+    existing_genres = set()
+    if channel.genre_filter:
+        existing_genres = {g.strip().lower() for g in channel.genre_filter.split(',') if g.strip()}
+    
+    existing_keywords = set()
+    if channel.keywords:
+        existing_keywords = {k.strip().lower() for k in channel.keywords.split(',') if k.strip()}
+    
+    movie_genres = [g.strip() for g in movie.genre.split(',') if g.strip()]
+    for genre in movie_genres:
+        genre_lower = genre.lower()
+        if genre_lower not in existing_genres:
+            suggestions.append({
+                'type': 'genre',
+                'value': genre,
+                'label': f"Add '{genre}' to genre filter"
+            })
+    
+    import re
+    title_words = re.findall(r'\b[a-z]{4,}\b', movie.title.lower())
+    common_words = {'with', 'from', 'that', 'this', 'have', 'been', 'were', 'when', 'what', 'where', 'which', 'their', 'there'}
+    title_words = [w for w in title_words if w not in common_words and w not in existing_keywords]
+    
+    for word in title_words[:3]:
+        suggestions.append({
+            'type': 'keyword',
+            'value': word,
+            'label': f"Add '{word}' keyword from title"
+        })
+    
+    if movie.summary:
+        summary_words = re.findall(r'\b[a-z]{5,}\b', movie.summary.lower())
+        summary_words = [w for w in summary_words if w not in common_words and w not in existing_keywords and w not in title_words]
+        
+        for word in summary_words[:2]:
+            suggestions.append({
+                'type': 'keyword',
+                'value': word,
+                'label': f"Add '{word}' keyword from summary"
+            })
+    
+    suggestions = suggestions[:5]
+    
+    return jsonify({'suggestions': suggestions})
+
+@app.route('/admin/holiday-channels/<int:id>/apply-suggestions', methods=['POST'])
+@login_required
+def apply_channel_suggestions(id):
+    if not current_user.is_admin:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    db = get_session()
+    channel = db.query(HolidayChannel).filter_by(id=id).first()
+    
+    if not channel:
+        return jsonify({'error': 'Channel not found'}), 404
+    
+    data = request.get_json()
+    suggestions = data.get('suggestions', [])
+    
+    if not suggestions:
+        return jsonify({'error': 'No suggestions provided'}), 400
+    
+    try:
+        existing_genres = set()
+        if channel.genre_filter:
+            existing_genres = {g.strip().lower() for g in channel.genre_filter.split(',') if g.strip()}
+        
+        existing_keywords = set()
+        if channel.keywords:
+            existing_keywords = {k.strip().lower() for k in channel.keywords.split(',') if k.strip()}
+        
+        new_genres = []
+        new_keywords = []
+        
+        for suggestion in suggestions:
+            suggestion_type = suggestion.get('type')
+            value = suggestion.get('value', '').strip()
+            
+            if not value:
+                continue
+            
+            if suggestion_type == 'genre':
+                value_lower = value.lower()
+                if value_lower not in existing_genres:
+                    new_genres.append(value)
+                    existing_genres.add(value_lower)
+            elif suggestion_type == 'keyword':
+                value_lower = value.lower()
+                if value_lower not in existing_keywords:
+                    new_keywords.append(value)
+                    existing_keywords.add(value_lower)
+        
+        if new_genres:
+            if channel.genre_filter:
+                channel.genre_filter = channel.genre_filter + ',' + ','.join(new_genres)
+            else:
+                channel.genre_filter = ','.join(new_genres)
+            logger.info(f"Added genres to channel '{channel.name}': {', '.join(new_genres)}")
+        
+        if new_keywords:
+            if channel.keywords:
+                channel.keywords = channel.keywords + ',' + ','.join(new_keywords)
+            else:
+                channel.keywords = ','.join(new_keywords)
+            logger.info(f"Added keywords to channel '{channel.name}': {', '.join(new_keywords)}")
+        
+        db.commit()
+        
+        scheduler.generate_all_schedules(force=True)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Applied {len(new_genres)} genre(s) and {len(new_keywords)} keyword(s) to channel filters',
+            'genres_added': new_genres,
+            'keywords_added': new_keywords
+        })
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error applying suggestions: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     initialize_app()

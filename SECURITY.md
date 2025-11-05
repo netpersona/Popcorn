@@ -1,7 +1,7 @@
 # Security Policy
 ## Supported Versions
 
-### Version	Supported
+### Version     Supported
 - [x] 2.0.x
 - [ ] 1.0
 

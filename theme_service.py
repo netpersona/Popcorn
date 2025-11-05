@@ -75,8 +75,7 @@ class ThemeService:
         try:
             data = json.loads(theme_data_str)
         except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON when validating theme: {e}")
-            return False, "Invalid theme file format.", None
+            return False, f"Invalid JSON: {str(e)}", None
         
         for key in REQUIRED_THEME_KEYS:
             if key not in data:
@@ -154,7 +153,7 @@ class ThemeService:
         except Exception as e:
             session.rollback()
             logger.error(f"Failed to save custom theme: {e}")
-            return False, "Failed to save custom theme due to a server error.", None
+            return False, str(e), None
         finally:
             session.close()
     
@@ -182,7 +181,7 @@ class ThemeService:
         except Exception as e:
             session.rollback()
             logger.error(f"Failed to delete custom theme: {e}")
-            return False, "An internal error occurred while deleting the theme."
+            return False, str(e)
         finally:
             session.close()
     

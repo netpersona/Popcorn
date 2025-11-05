@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, date
 import random
 import logging
-from models import Movie, Schedule, HolidayChannel, Settings, get_session
+import re
+from models import Movie, Schedule, HolidayChannel, Settings, MovieOverride, get_session
+from tmdb_api import TMDBAPI
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,12 +25,75 @@ class ScheduleGenerator:
             logger.info("Migrating holiday_channels table: adding genre_filter column")
             self.session.execute(text('ALTER TABLE holiday_channels ADD COLUMN genre_filter TEXT'))
             self.session.commit()
+        
+        if 'filter_mode' not in columns:
+            logger.info("Migrating holiday_channels table: adding filter_mode column")
+            self.session.execute(text('ALTER TABLE holiday_channels ADD COLUMN filter_mode TEXT DEFAULT "AND"'))
+            self.session.execute(text('UPDATE holiday_channels SET filter_mode = "AND" WHERE filter_mode IS NULL'))
+            self.session.commit()
+        
+        if 'tmdb_collection_ids' not in columns:
+            logger.info("Migrating holiday_channels table: adding tmdb_collection_ids column")
+            self.session.execute(text('ALTER TABLE holiday_channels ADD COLUMN tmdb_collection_ids TEXT'))
+            self.session.commit()
+        
+        if 'tmdb_keywords' not in columns:
+            logger.info("Migrating holiday_channels table: adding tmdb_keywords column")
+            self.session.execute(text('ALTER TABLE holiday_channels ADD COLUMN tmdb_keywords TEXT'))
+            self.session.commit()
+        
+        if 'min_rating' not in columns:
+            logger.info("Migrating holiday_channels table: adding min_rating column")
+            self.session.execute(text('ALTER TABLE holiday_channels ADD COLUMN min_rating REAL'))
+            self.session.commit()
+        
+        if 'min_popularity' not in columns:
+            logger.info("Migrating holiday_channels table: adding min_popularity column")
+            self.session.execute(text('ALTER TABLE holiday_channels ADD COLUMN min_popularity REAL'))
+            self.session.commit()
+    
+    def upgrade_holiday_channel_defaults(self):
+        """
+        Upgrade existing holiday channels with improved keywords and AND filter mode.
+        This is called for existing installations to ensure they get the latest improvements.
+        """
+        from sqlalchemy import text
+        
+        # Define the improved channel configurations
+        channel_upgrades = {
+            'Cozy Halloween': {
+                'keywords': 'halloween,hocus pocus,casper,ghostbusters,addams family,beetlejuice,nightmare before christmas,corpse bride,frankenweenie,coraline,paranorman,goosebumps',
+                'filter_mode': 'AND'
+            },
+            'Scary Halloween': {
+                'keywords': 'halloween,scream,nightmare on elm street,friday the 13th,evil dead,saw,conjuring,insidious,paranormal activity,exorcist,the ring,the grudge,slasher',
+                'filter_mode': 'AND'
+            },
+            'Christmas': {
+                'keywords': 'christmas,xmas,santa claus,grinch,miracle on 34th street,wonderful life,home alone,polar express,jingle all the way,carol,noel,nutcracker,scrooge',
+                'genre_filter': 'comedy,family,drama,animation,fantasy,romance',
+                'filter_mode': 'AND'
+            }
+        }
+        
+        # Update each existing channel
+        for channel_name, upgrades in channel_upgrades.items():
+            existing_channel = self.session.query(HolidayChannel).filter_by(name=channel_name).first()
+            if existing_channel:
+                existing_channel.keywords = upgrades['keywords']
+                existing_channel.filter_mode = upgrades['filter_mode']
+                if 'genre_filter' in upgrades:
+                    existing_channel.genre_filter = upgrades['genre_filter']
+                logger.info(f"Upgraded holiday channel '{channel_name}' with improved keywords and AND filter mode")
+        
+        self.session.commit()
     
     def initialize_holiday_channels(self):
         self.migrate_holiday_channels_schema()
         
         existing = self.session.query(HolidayChannel).count()
         if existing > 0:
+            self.upgrade_holiday_channel_defaults()
             return
         
         holiday_channels = [
@@ -37,24 +102,27 @@ class ScheduleGenerator:
                 'start_month': 9,
                 'end_month': 11,
                 'genre_filter': 'animation,family,fantasy',
-                'keywords': 'halloween,hocus,casper,ghostbusters,monster,addams,beetlejuice,nightmare before christmas,corpse bride,frankenweenie,coraline,paranorman,witch,ghost,spooky,goosebumps',
-                'rating_filter': 'G,PG,PG-13'
+                'keywords': 'halloween,hocus pocus,casper,ghostbusters,addams family,beetlejuice,nightmare before christmas,corpse bride,frankenweenie,coraline,paranorman,goosebumps',
+                'rating_filter': 'G,PG,PG-13',
+                'filter_mode': 'AND'
             },
             {
                 'name': 'Scary Halloween',
                 'start_month': 9,
                 'end_month': 11,
                 'genre_filter': 'horror,thriller',
-                'keywords': 'halloween,scream,nightmare,friday the 13th,evil dead,saw,conjuring,insidious,paranormal,exorcist,ring,grudge,terror,slasher',
-                'rating_filter': 'PG-13,R,NR,Not Rated,Unrated'
+                'keywords': 'halloween,scream,nightmare on elm street,friday the 13th,evil dead,saw,conjuring,insidious,paranormal activity,exorcist,the ring,the grudge,slasher',
+                'rating_filter': 'PG-13,R,NR,Not Rated,Unrated',
+                'filter_mode': 'AND'
             },
             {
                 'name': 'Christmas',
                 'start_month': 11,
                 'end_month': 1,
-                'genre_filter': 'holiday',
-                'keywords': 'christmas,xmas,santa,elf,grinch,miracle,wonderful life,home alone,polar express,jingle,carol,noel,claus,reindeer,snowman,nutcracker,scrooge',
-                'rating_filter': None
+                'genre_filter': 'comedy,family,drama,animation,fantasy,romance',
+                'keywords': 'christmas,xmas,santa claus,grinch,miracle on 34th street,wonderful life,home alone,polar express,jingle all the way,carol,noel,nutcracker,scrooge',
+                'rating_filter': None,
+                'filter_mode': 'AND'
             }
         ]
         
@@ -63,7 +131,7 @@ class ScheduleGenerator:
             self.session.add(channel)
         
         self.session.commit()
-        logger.info("Initialized holiday channels with genre-based filtering")
+        logger.info("Initialized holiday channels with improved filtering")
     
     def get_active_holiday_channels(self):
         current_month = datetime.now().month
@@ -81,9 +149,31 @@ class ScheduleGenerator:
         return active
     
     def get_movies_for_holiday_channel(self, channel):
+        """
+        Filter movies for a holiday channel with improved logic.
+        
+        Priority:
+        1. Check MovieOverride table (blacklist excludes, whitelist includes immediately)
+        2. Use word boundary regex for keyword matching
+        3. Support filter_mode: 'AND' or 'OR'
+        4. Integrate TMDB if api_key exists
+        5. Return movies with detailed match reasons
+        """
         movies = self.session.query(Movie).all()
         matching_movies = []
         
+        # Get all overrides for this channel
+        overrides = self.session.query(MovieOverride).filter_by(channel_name=channel.name).all()
+        blacklist_ids = {o.movie_id for o in overrides if o.override_type == 'blacklist'}
+        whitelist_ids = {o.movie_id for o in overrides if o.override_type == 'whitelist'}
+        
+        # Get TMDB API if available
+        settings = self.session.query(Settings).first()
+        tmdb = None
+        if settings and settings.tmdb_api_key:
+            tmdb = TMDBAPI(settings.tmdb_api_key)
+        
+        # Parse channel filters
         genre_filters = []
         if channel.genre_filter:
             genre_filters = [g.strip().lower() for g in channel.genre_filter.split(',')]
@@ -92,45 +182,106 @@ class ScheduleGenerator:
         if channel.keywords:
             keywords = [k.strip().lower() for k in channel.keywords.split(',')]
         
+        # Parse TMDB filters
+        tmdb_collection_ids = []
+        if channel.tmdb_collection_ids:
+            tmdb_collection_ids = [int(id.strip()) for id in channel.tmdb_collection_ids.split(',') if id.strip().isdigit()]
+        
+        tmdb_keywords = []
+        if channel.tmdb_keywords:
+            tmdb_keywords = [k.strip().lower() for k in channel.tmdb_keywords.split(',')]
+        
+        filter_mode = channel.filter_mode if channel.filter_mode else 'OR'
+        
         for movie in movies:
-            matched = False
-            genre_match = False
-            keyword_match = False
+            # Check blacklist first - skip if blacklisted
+            if movie.id in blacklist_ids:
+                logger.debug(f"Movie '{movie.title}' blacklisted for channel '{channel.name}'")
+                continue
             
+            # Check whitelist - include immediately if whitelisted
+            if movie.id in whitelist_ids:
+                logger.debug(f"Movie '{movie.title}' whitelisted for channel '{channel.name}'")
+                matching_movies.append(movie)
+                continue
+            
+            # Prepare text for matching
             movie_genre_lower = movie.genre.lower()
             title_lower = movie.title.lower()
             summary_lower = movie.summary.lower() if movie.summary else ''
             
+            # Genre matching
+            genre_match = False
             if genre_filters:
-                if any(genre_filter in movie_genre_lower for genre_filter in genre_filters):
-                    genre_match = True
+                genre_match = any(genre_filter in movie_genre_lower for genre_filter in genre_filters)
             
+            # Keyword matching with word boundaries
+            keyword_match = False
+            matched_keywords = []
             if keywords:
-                title_match = any(keyword in title_lower for keyword in keywords)
-                summary_match = any(keyword in summary_lower for keyword in keywords)
-                
-                if title_match or summary_match:
-                    keyword_match = True
+                for keyword in keywords:
+                    # Use word boundary regex to avoid partial matches
+                    pattern = r'\b' + re.escape(keyword) + r'\b'
+                    if re.search(pattern, title_lower, re.IGNORECASE) or re.search(pattern, summary_lower, re.IGNORECASE):
+                        keyword_match = True
+                        matched_keywords.append(keyword)
+                        break
             
-            if channel.name == 'Cozy Halloween':
+            # TMDB integration (optional)
+            tmdb_match = False
+            if tmdb and movie.year:
+                try:
+                    tmdb_data = tmdb.get_movie_by_plex_metadata(movie.title, movie.year)
+                    if tmdb_data:
+                        # Check TMDB collections
+                        if tmdb_collection_ids and tmdb_data.get('belongs_to_collection'):
+                            collection_id = tmdb_data['belongs_to_collection'].get('id')
+                            if collection_id in tmdb_collection_ids:
+                                tmdb_match = True
+                        
+                        # Check TMDB keywords
+                        if tmdb_keywords and tmdb_data.get('tmdb_keywords'):
+                            if any(kw in tmdb_data['tmdb_keywords'] for kw in tmdb_keywords):
+                                tmdb_match = True
+                        
+                        # Check min_rating
+                        if channel.min_rating and tmdb_data.get('vote_average'):
+                            if tmdb_data['vote_average'] < channel.min_rating:
+                                continue
+                        
+                        # Check min_popularity
+                        if channel.min_popularity and tmdb_data.get('popularity'):
+                            if tmdb_data['popularity'] < channel.min_popularity:
+                                continue
+                except Exception as e:
+                    logger.debug(f"TMDB lookup failed for '{movie.title}': {e}")
+            
+            # Apply filter mode logic
+            matched = False
+            if filter_mode == 'AND':
+                # Both genre AND keyword must match
                 matched = genre_match and keyword_match
-            elif channel.name == 'Scary Halloween':
-                horror_match = 'horror' in movie_genre_lower
-                thriller_with_keyword = 'thriller' in movie_genre_lower and keyword_match
-                matched = horror_match or thriller_with_keyword
             else:
+                # Either genre OR keyword can match
                 matched = genre_match or keyword_match
             
+            # Include TMDB match in OR logic
+            if tmdb_match:
+                matched = True
+            
+            # Apply rating filter if matched
             if matched:
                 if channel.rating_filter:
                     allowed_ratings = [r.strip().upper() for r in channel.rating_filter.split(',')]
                     movie_rating_upper = movie.rating.upper() if movie.rating else ''
                     if movie_rating_upper in allowed_ratings or not movie.rating:
                         matching_movies.append(movie)
+                        logger.debug(f"Movie '{movie.title}' matched for '{channel.name}' - Genre: {genre_match}, Keyword: {keyword_match}, TMDB: {tmdb_match}")
                 else:
                     matching_movies.append(movie)
+                    logger.debug(f"Movie '{movie.title}' matched for '{channel.name}' - Genre: {genre_match}, Keyword: {keyword_match}, TMDB: {tmdb_match}")
         
-        logger.info(f"Found {len(matching_movies)} movies for holiday channel '{channel.name}'")
+        logger.info(f"Found {len(matching_movies)} movies for holiday channel '{channel.name}' (filter_mode: {filter_mode})")
         return matching_movies
     
     def generate_channel_schedule(self, channel_name, movies, day=0):

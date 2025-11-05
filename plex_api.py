@@ -25,64 +25,108 @@ class PlexAPI:
             logger.error(f"Failed to connect to Plex: {e}")
             raise
     
-    def fetch_movies(self):
+    def get_movie_libraries(self):
+        """
+        Get list of all available movie library names.
+        Returns a list of library names (strings).
+        """
         try:
-            movies_section = None
+            library_names = []
             for section in self.plex.library.sections():
                 if section.type == 'movie':
-                    movies_section = section
-                    break
+                    library_names.append(section.title)
+                    logger.info(f"Found movie library: {section.title}")
             
-            if not movies_section:
-                logger.error("No movie library found in Plex")
+            if not library_names:
+                logger.warning("No movie libraries found in Plex")
+            else:
+                logger.info(f"Total movie libraries found: {len(library_names)}")
+            
+            return library_names
+            
+        except Exception as e:
+            logger.error(f"Error fetching movie libraries: {e}")
+            return []
+    
+    def fetch_movies(self, selected_libraries=None):
+        """
+        Fetch movies from Plex libraries.
+        
+        Args:
+            selected_libraries (list, optional): List of library names to fetch from.
+                                                If None or empty, fetches from ALL movie libraries.
+        
+        Returns:
+            list: List of movie dictionaries with library_name field included.
+        """
+        try:
+            # Get all movie sections
+            movie_sections = []
+            for section in self.plex.library.sections():
+                if section.type == 'movie':
+                    # If selected_libraries is specified, filter by those names
+                    if selected_libraries and section.title not in selected_libraries:
+                        logger.info(f"Skipping library '{section.title}' (not in selected libraries)")
+                        continue
+                    movie_sections.append(section)
+            
+            if not movie_sections:
+                if selected_libraries:
+                    logger.warning(f"No movie libraries found matching selected libraries: {selected_libraries}")
+                else:
+                    logger.error("No movie libraries found in Plex")
                 return []
             
-            logger.info(f"Fetching movies from library: {movies_section.title}")
-            movies = movies_section.all()
-            
+            # Fetch movies from all selected libraries
             movie_data = []
-            for movie in movies:
-                genres = [g.tag for g in movie.genres] if movie.genres else ['Unknown']
+            for movies_section in movie_sections:
+                logger.info(f"Fetching movies from library: {movies_section.title}")
+                movies = movies_section.all()
+                library_name = movies_section.title
                 
-                poster_url = None
-                if hasattr(movie, 'thumb') and movie.thumb:
-                    poster_url = f"{self.base_url}{movie.thumb}?X-Plex-Token={self.token}"
-                
-                # Get landscape art (banner/backdrop)
-                art_url = None
-                if hasattr(movie, 'art') and movie.art:
-                    art_url = f"{self.base_url}{movie.art}?X-Plex-Token={self.token}"
-                
-                # Get audience rating (IMDb, Rotten Tomatoes, etc.)
-                audience_rating = None
-                if hasattr(movie, 'audienceRating') and movie.audienceRating:
-                    audience_rating = float(movie.audienceRating)
-                elif hasattr(movie, 'rating') and movie.rating:
-                    audience_rating = float(movie.rating)
-                
-                # Get cast (top 5 actors)
-                cast = []
-                if hasattr(movie, 'roles') and movie.roles:
-                    cast = [role.tag for role in movie.roles[:5]]
-                cast_str = ', '.join(cast) if cast else None
-                
-                movie_info = {
-                    'title': movie.title,
-                    'plex_id': str(movie.ratingKey),
-                    'duration': int(movie.duration / 60000) if movie.duration else 0,
-                    'genres': genres,
-                    'year': movie.year if hasattr(movie, 'year') else None,
-                    'rating': movie.contentRating if hasattr(movie, 'contentRating') else None,
-                    'content_rating': movie.contentRating if hasattr(movie, 'contentRating') else None,
-                    'audience_rating': audience_rating,
-                    'summary': movie.summary if hasattr(movie, 'summary') else '',
-                    'poster_url': poster_url,
-                    'art_url': art_url,
-                    'cast': cast_str
-                }
-                movie_data.append(movie_info)
+                for movie in movies:
+                    genres = [g.tag for g in movie.genres] if movie.genres else ['Unknown']
+                    
+                    poster_url = None
+                    if hasattr(movie, 'thumb') and movie.thumb:
+                        poster_url = f"{self.base_url}{movie.thumb}?X-Plex-Token={self.token}"
+                    
+                    # Get landscape art (banner/backdrop)
+                    art_url = None
+                    if hasattr(movie, 'art') and movie.art:
+                        art_url = f"{self.base_url}{movie.art}?X-Plex-Token={self.token}"
+                    
+                    # Get audience rating (IMDb, Rotten Tomatoes, etc.)
+                    audience_rating = None
+                    if hasattr(movie, 'audienceRating') and movie.audienceRating:
+                        audience_rating = float(movie.audienceRating)
+                    elif hasattr(movie, 'rating') and movie.rating:
+                        audience_rating = float(movie.rating)
+                    
+                    # Get cast (top 5 actors)
+                    cast = []
+                    if hasattr(movie, 'roles') and movie.roles:
+                        cast = [role.tag for role in movie.roles[:5]]
+                    cast_str = ', '.join(cast) if cast else None
+                    
+                    movie_info = {
+                        'title': movie.title,
+                        'plex_id': str(movie.ratingKey),
+                        'duration': int(movie.duration / 60000) if movie.duration else 0,
+                        'genres': genres,
+                        'year': movie.year if hasattr(movie, 'year') else None,
+                        'rating': movie.contentRating if hasattr(movie, 'contentRating') else None,
+                        'content_rating': movie.contentRating if hasattr(movie, 'contentRating') else None,
+                        'audience_rating': audience_rating,
+                        'summary': movie.summary if hasattr(movie, 'summary') else '',
+                        'poster_url': poster_url,
+                        'art_url': art_url,
+                        'cast': cast_str,
+                        'library_name': library_name
+                    }
+                    movie_data.append(movie_info)
             
-            logger.info(f"Fetched {len(movie_data)} movies from Plex")
+            logger.info(f"Fetched {len(movie_data)} movies from {len(movie_sections)} libraries")
             return movie_data
             
         except Exception as e:
@@ -141,8 +185,8 @@ class PlexAPI:
                     client.playMedia(movie)
                     logger.info(f"Sent playMedia command to {client.title}")
                 except Exception as e:
-                    logger.error(f"Failed to start playback: {e}", exc_info=True)
-                    return False, "Playback failed to start. Please check your Plex client and try again.", 0
+                    logger.error(f"Failed to start playback: {e}")
+                    return False, f"Playback failed: {str(e)}. Make sure your Plex client is responding.", 0
                 
                 if offset_ms > 0:
                     import time
@@ -323,5 +367,4 @@ class PlexAPI:
             
         except Exception as e:
             logger.error(f"Failed to verify library access: {e}")
-            # Return a generic error message to the client to avoid leaking internal details
-            return False, "Cannot access Plex server at this time. Please try again later or contact your administrator."
+            return False, f"Cannot access Plex server: {str(e)}"

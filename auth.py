@@ -85,6 +85,38 @@ class PlexOAuth:
         except Exception as e:
             logger.error(f"Failed to get Plex user info: {e}")
             return None
+    
+    def get_user_servers(self, auth_token):
+        """
+        Query Plex.tv for all servers accessible to the user's token.
+        Returns a list of server dictionaries with name, machineIdentifier, and connections.
+        """
+        headers = {
+            'Accept': 'application/json',
+            'X-Plex-Token': auth_token,
+            'X-Plex-Client-Identifier': self.client_id
+        }
+        
+        try:
+            response = requests.get('https://plex.tv/api/v2/resources?includeHttps=1', headers=headers)
+            response.raise_for_status()
+            resources = response.json()
+            
+            servers = []
+            for resource in resources:
+                if resource.get('provides') == 'server':
+                    servers.append({
+                        'name': resource.get('name'),
+                        'machineIdentifier': resource.get('clientIdentifier'),
+                        'owned': resource.get('owned', False),
+                        'connections': resource.get('connections', [])
+                    })
+            
+            logger.info(f"Found {len(servers)} Plex servers accessible to user")
+            return servers
+        except Exception as e:
+            logger.error(f"Failed to get user's Plex servers: {e}")
+            return []
 
 def create_or_update_plex_user(user_info, auth_token, db_session):
     try:
