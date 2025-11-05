@@ -1112,8 +1112,8 @@ def settings():
                 logger.info("Plex API reconnected with new settings")
                 
                 # Capture and store the Plex server's machine identifier
-                if plex_api.plex_server:
-                    machine_id = plex_api.plex_server.machineIdentifier
+                if plex_api.plex:
+                    machine_id = plex_api.plex.machineIdentifier
                     settings_obj.plex_machine_identifier = machine_id
                     db_session.commit()
                     logger.info(f"Stored Plex machine identifier: {machine_id}")
