@@ -8,7 +8,7 @@ Base = declarative_base()
 
 class Movie(Base):
     __tablename__ = 'movies'
-    
+
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     genre = Column(String, nullable=False)
@@ -23,9 +23,12 @@ class Movie(Base):
     content_rating = Column(String)
     cast = Column(String)
     library_name = Column(String)
-    
-    schedules = relationship('Schedule', back_populates='movie')
-    
+
+    schedules = relationship('Schedule', back_populates='movie', cascade='all, delete-orphan')
+    overrides = relationship('MovieOverride', cascade='all, delete-orphan')
+    favorites = relationship('MovieFavorite', cascade='all, delete-orphan')
+    watch_history = relationship('WatchHistory')
+
     __table_args__ = (UniqueConstraint('plex_id', 'genre', name='_plex_genre_uc'),)
     
     def __repr__(self):
@@ -210,17 +213,17 @@ class CustomTheme(Base):
 
 class WatchHistory(Base):
     __tablename__ = 'watch_history'
-    
+
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    movie_id = Column(Integer, ForeignKey('movies.id'))
+    movie_id = Column(Integer, ForeignKey('movies.id', ondelete='SET NULL'))
     plex_id = Column(String, nullable=False)
     movie_title = Column(String, nullable=False)
     movie_genre = Column(String)
     watched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration_watched = Column(Integer)
     playback_position = Column(Integer, default=0)
-    
+
     user = relationship('User')
     movie = relationship('Movie')
     
