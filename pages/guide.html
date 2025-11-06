@@ -2337,6 +2337,18 @@
             } catch(e) {}
         }, { passive: true });
 
+        // Forward wheel events from channel rail to guide content for seamless scrolling
+        const channelRail = document.getElementById('channel-rail');
+        if (channelRail) {
+            channelRail.addEventListener('wheel', function(e) {
+                // Only handle vertical scrolling, let horizontal pass through
+                if (Math.abs(e.deltaY) > 0) {
+                    e.preventDefault();
+                    guideContent.scrollTop += e.deltaY;
+                }
+            }, { passive: false });
+        }
+
         function restoreLastPosition() {
             try {
                 const lastScrollTop = localStorage.getItem('popcorn_last_scroll_top');
