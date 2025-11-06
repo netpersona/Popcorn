@@ -143,13 +143,12 @@ class PlexAPI:
 
                 # Use custom Plex URL if available, otherwise fall back to app.plex.tv
                 if self.base_url and not self.base_url.startswith('http://127.0.0.1') and not self.base_url.startswith('http://localhost'):
-                    # Custom domain - use /web/index.html format
+                    # Custom domain - use /web/index.html format with URL-encoded key parameter
                     base_web_url = self.base_url.rstrip('/')
-                    web_path = f"/web/index.html#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}"
-                    web_url = f"{base_web_url}{web_path}"
+                    web_url = f"{base_web_url}/web/index.html#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}"
                 else:
-                    # Default to app.plex.tv for local or unset URLs
-                    web_url = f"https://app.plex.tv/desktop/#!/server/{server_id}/details?key=/library/metadata/{plex_id}&context=content.browse.metadata"
+                    # Default to app.plex.tv for local or unset URLs (keep context parameter for proper deep linking)
+                    web_url = f"https://app.plex.tv/desktop#!/server/{server_id}/details?key=/library/metadata/{plex_id}&context=content.browse.metadata"
 
                 if offset_ms > 0:
                     offset_min = offset_ms // 60000
@@ -288,7 +287,16 @@ class PlexAPI:
                     resources = account.resources()
                     
                     # Filter for client devices (not servers)
-                    client_resources = [r for r in resources if r.provides == 'client' or r.provides == 'player']
+                    # r.provides is a comma-separated STRING in plexapi 4.x, not a list
+                    # Convert to set for proper checking
+                    client_resources = []
+                    for r in resources:
+                        provides_set = set(r.provides.split(',')) if isinstance(r.provides, str) else set(r.provides)
+                        
+                        # Include if it provides client or player capabilities, but exclude pure servers
+                        if ('client' in provides_set or 'player' in provides_set) and provides_set != {'server'}:
+                            client_resources.append(r)
+                    
                     logger.info(f"Method 3 (MyPlex): Found {len(client_resources)} registered client(s)")
                     
                     for resource in client_resources:
@@ -303,7 +311,7 @@ class PlexAPI:
                                 'platform': platform,
                                 'source': 'Registered (may be offline)'
                             }
-                            logger.info(f"  → Registered: {resource.name}")
+                            logger.info(f"  → Registered: {resource.name} ({resource.product})")
             except Exception as e:
                 logger.warning(f"Could not fetch MyPlex resources: {e}")
             
@@ -347,7 +355,7 @@ class PlexAPI:
 
             # Use custom Plex URL if available, otherwise fall back to app.plex.tv
             if self.base_url and not self.base_url.startswith('http://127.0.0.1') and not self.base_url.startswith('http://localhost'):
-                # Custom domain - use /web/index.html format
+                # Custom domain - use /web/index.html format with URL-encoded key parameter
                 base_web_url = self.base_url.rstrip('/')
                 web_url = f"{base_web_url}/web/index.html#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}"
             else:
