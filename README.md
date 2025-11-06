@@ -32,64 +32,99 @@ An old-school TV guide for discovering, scheduling, and sharing movies with frie
 
 ---
 
+## ✨ What is Popcorn?
 
-## ✨ Features
+Popcorn brings back the magic of flipping through cable TV channels, but with your own Plex movie collection. Instead of browsing endless lists, you get a real TV guide showing what's "on" right now across different genre channels.
 
-- **🎬 Auto-Generated Channels** – Action, Comedy, Drama, Horror, and more—organized from your Plex library
-- **🎃 Seasonal Channels** – Halloween Horror, Christmas Classics, and holiday-themed programming
-- **📺 Retro TV Guide** – Time-based program grid with optional CRT effects and film grain
-- **📱 Multi-Device Playback** – Save your Roku, Apple TV, Fire Stick, and other Plex clients
-- **🔐 Secure Authentication** – Plex OAuth or local accounts with admin controls
-- **🎨 Customizable Themes** – Plex dark mode, seasonal themes, or create your own
-- **📊 Watch History** – Track what you've watched with viewing statistics
-- **👥 User Management** – Admin dashboard with invite codes and access controls
+**Perfect for:**
+- Movie nights when you can't decide what to watch
+- Recreating the nostalgia of old-school cable TV
+- Discovering forgotten movies in your collection
+- Family viewing with kid-friendly scheduled content
+
+---
+
+## 🎯 Key Features
+
+### 📺 Automatic Channel Generation
+- **Genre Channels**: Action, Comedy, Drama, Horror, Sci-Fi, and more
+- **Holiday Channels**: Halloween spooky movies, Christmas classics, seasonal favorites
+- **Smart Scheduling**: 24-hour programming based on movie lengths
+
+### 🕹️ Classic TV Guide Interface
+- Time-based program grid just like old cable boxes
+- Browse what's playing "now" across all channels
+- Mobile-responsive design that works on phones, tablets, and TVs
+
+### 🎮 Multi-Device Playback
+- Play movies on any Plex device (Roku, Apple TV, smart TVs, etc.)
+- Save favorite devices for quick access
+- Automatic device discovery
+
+### 🎨 Customizable Experience
+- Multiple themes (Plex-style, Halloween, Christmas, custom)
+- Optional retro effects (CRT monitor look, film grain)
+- Classic cable channel numbers (Horror = Channel 666)
+
+### 📊 Watch History & Stats
+- Track what you've watched
+- See viewing statistics
+- "Watched" badges on movies you've seen
+
+### 🔐 User Management
+- Plex account integration (OAuth)
+- Local username/password accounts
+- Admin controls for managing users
+- Invite code system for new users
 
 ---
 
 ## 🚀 Quick Start
 
-### Docker Compose (Recommended)
+### Option 1: Docker Compose (Easiest - Recommended!)
 
-The easiest installation method with automatic persistence:
+Everything is pre-configured. Just two steps:
 
-1. **Download** `docker-compose.yml` from this repository
-2. **Edit** the file:
+1. **Download the `docker-compose.yml` file**
+
+2. **Edit these two lines:**
    ```yaml
-   SESSION_SECRET: "your-random-secret-here"  # Generate with: openssl rand -hex 32
-   PLEX_URL: "http://192.168.1.100:32400"     # Optional
-   PLEX_TOKEN: "your-plex-token"              # Optional
+   SESSION_SECRET: "change-this-to-random-string"  # Generate with: openssl rand -hex 32
+   PLEX_URL: "http://192.168.1.100:32400"         # Optional: Your Plex server
+   PLEX_TOKEN: "your-plex-token"                   # Optional: Your Plex token
    ```
-3. **Launch**:
+
+3. **Run it:**
    ```bash
    docker-compose up -d
    ```
 
-Your data automatically persists in `./popcorn-data` and survives container updates.
+That's it! Access at `http://your-server-ip:5000`
 
-**Update anytime:** 
-```bash
-docker-compose pull && docker-compose up -d
-```
+Your data automatically saves in `./popcorn-data` and survives updates.
+
+**Updating:** `docker-compose pull && docker-compose up -d`
 
 ---
 
-### Unraid
+### Option 2: Unraid Users
 
-Install from **Community Applications**:
-
-1. Search for "Popcorn" in Community Apps
-2. Fill in `SESSION_SECRET` (and optionally Plex settings)
-3. Click **Apply**
+1. Open **Community Applications**
+2. Search for **"Popcorn"**
+3. Fill in your `SESSION_SECRET` and Plex settings
+4. Click **Apply**
 
 All volume mappings are pre-configured. See [UNRAID_SETUP.md](UNRAID_SETUP.md) for details.
 
 ---
 
-### Manual Docker
+### Option 3: Manual Docker Run
+
+For command-line enthusiasts:
 
 ```bash
 docker run -d \
-  --name popcorn \
+  --name Popcorn \
   -p 5000:5000 \
   -v ./popcorn-data:/data \
   -e SESSION_SECRET="$(openssl rand -hex 32)" \
@@ -99,62 +134,78 @@ docker run -d \
   netpersona/popcorn:latest
 ```
 
-> ⚠️ **Critical:** The `-v ./popcorn-data:/data` volume mapping is required to persist your database between updates.
+⚠️ **Critical:** The `-v ./popcorn-data:/data` line saves your database. Without it, you'll lose everything when updating!
 
 ---
 
 ## ⚙️ Configuration
 
-### Environment Variables
+### Required Settings
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `SESSION_SECRET` | **Yes** | — | Session encryption key (generate with `openssl rand -hex 32`) |
-| `PLEX_URL` | No | — | Plex server URL (e.g., `http://192.168.1.100:32400`) |
-| `PLEX_TOKEN` | No | — | Plex authentication token |
-| `DATA_DIR` | No | `/data` | Data directory path (Docker) or `./` (local dev) |
+| Setting | Required? | What It Does |
+|---------|-----------|--------------|
+| `SESSION_SECRET` | **Yes** | Encrypts your login sessions (keep this secret!) |
+| `PLEX_URL` | Optional* | Where your Plex server lives (e.g., `http://192.168.1.100:32400`) |
+| `PLEX_TOKEN` | Optional* | Your Plex authentication token |
 
-> **Note:** `PLEX_URL` and `PLEX_TOKEN` can be configured through the web interface after first login.
+*You can set these in the web interface after logging in if you prefer.
 
 ### Finding Your Plex Token
 
-1. Open Plex Web App and play any item
-2. Click the **ⓘ** icon → **View XML**
-3. Look for `X-Plex-Token=` in the URL
-4. Copy the token value
+1. Open Plex Web App and play any movie
+2. Click the **ⓘ** (info) icon
+3. Click **"View XML"**
+4. Look for `X-Plex-Token=` in the browser URL
+5. Copy everything after the `=` sign
 
-📖 [Official Plex Documentation](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
+[Official Plex guide](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 
 ---
 
-## 🎯 First-Time Setup
+## 🎬 First-Time Setup
 
-1. **Access** the web interface at `http://your-server-ip:5000`
-2. **Login** with default credentials:
+1. **Open your browser** to `http://your-server-ip:5000`
+
+2. **Login with default credentials:**
    - Username: `admin`
    - Password: `admin`
-3. **⚠️ Change the default password immediately** (you'll see a warning banner)
-4. **Configure Plex** in **Admin → Settings** (if not set via environment variables)
-5. **Generate** your first schedule from the home page
+
+3. **⚠️ CHANGE THE PASSWORD IMMEDIATELY!**
+   - You'll see a warning banner
+   - Go to your profile settings
+
+4. **Connect to Plex** (if you didn't set environment variables):
+   - Click **Admin** → **Settings**
+   - Enter your Plex URL and Token
+   - Click **Save**
+
+5. **Generate your first schedule:**
+   - Go to the home page
+   - Click **"Generate Schedule"**
+   - Wait a few moments while Popcorn analyzes your movies
+
+6. **Enjoy!** Browse channels and start watching.
 
 ---
 
-## 🛠️ Local Development
+## 🖥️ Local Development
+
+Want to contribute or run it without Docker?
 
 ```bash
 # Clone the repository
 git clone https://github.com/netpersona/Popcorn.git
 cd Popcorn
 
-# Install dependencies
+# Install Python dependencies
 pip install -r requirements.txt
 
-# Configure environment
+# Set up environment
 export SESSION_SECRET="$(openssl rand -hex 32)"
 export PLEX_URL="http://192.168.1.100:32400"
 export PLEX_TOKEN="your-token-here"
 
-# Run the application
+# Run the app
 python app.py
 ```
 
@@ -162,69 +213,95 @@ Access at `http://localhost:5000`
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ How It Works (Technical Overview)
 
-### Frontend
-- **Server-Side Rendering** with Jinja2 templates and Bootstrap 5
-- **Dynamic Theme System** using CSS custom properties
-- **Responsive Design** with mobile (<600px), tablet (600-1023px), and desktop (≥1024px) breakpoints
-- **Optional Retro Effects** including CRT monitor simulation and film grain overlay
+### The Magic Behind the Scenes
 
-### Backend
-- **Flask** web framework with SQLAlchemy ORM
-- **Multi-Strategy Authentication** supporting Plex OAuth and local accounts
-- **Automated Schedule Generation** with genre-based and seasonal channels
-- **Image Caching** using bounded LRU cache (300 items, ~150MB)
-- **Multi-Device Playback** with platform-specific client management
+**Schedule Generation:**
+1. Popcorn connects to your Plex server and fetches all movies
+2. Movies are automatically sorted into genre channels (Action, Comedy, etc.)
+3. A 24-hour schedule is built by filling time slots based on movie lengths
+4. Holiday channels use smart keyword matching (e.g., "Christmas" titles for holiday channel)
 
-### Integrations
-- **Plex Media Server** via PlexAPI library for metadata and playback control
-- **Plex OAuth** for seamless user authentication
-- **GitHub** for automatic update detection (Docker-aware)
+**TV Guide Interface:**
+- Server-side rendering with Jinja2 templates keeps things fast
+- Responsive design adapts to your screen size
+- Desktop: Full grid layout like a real TV guide
+- Mobile: Vertical channel list with horizontal movie scrolling
+
+**Playback Management:**
+- When you click "Watch Now", Popcorn talks to the Plex API
+- It finds your selected device (TV, streaming stick, etc.)
+- Sends a command to start playing the movie
+- All playback happens through Plex—Popcorn is just the remote control
+
+**Data Storage:**
+- SQLite database stores everything (schedules, watch history, user preferences)
+- Volume mounting in Docker ensures your data persists between updates
+- Automatic database migrations handle upgrades smoothly
+
+### Technology Stack
+
+**Frontend:**
+- Bootstrap 5 for responsive layouts
+- Minimal JavaScript for smooth interactions
+- CSS custom properties for theme switching
+- Font Awesome icons
+
+**Backend:**
+- Flask web framework (Python)
+- SQLAlchemy for database operations
+- PlexAPI library for Plex integration
+- Flask-Login for user sessions
+
+**Security:**
+- Password hashing with Werkzeug
+- CSRF protection on all forms
+- Secure session management
+- OAuth integration with Plex accounts
 
 ---
 
-## 📊 Data Models
+## 🎨 Themes & Customization
 
-- **User** – Authentication, preferences, admin flags
-- **Movie** – Plex metadata (title, genre, duration, posters)
-- **Schedule** – Time-slot assignments for channels
-- **HolidayChannel** – Seasonal channel configurations
-- **WatchHistory** – Viewing records and statistics
-- **SavedDevice** – User's Plex playback devices
-- **CustomTheme** – User-created color schemes
+Popcorn comes with several built-in themes:
+- **Plex**: Clean, modern look matching Plex's style
+- **Halloween**: Spooky orange and black
+- **Christmas**: Festive red and green
+- **Custom**: Create your own color scheme
 
-Database migrations are idempotent and safe for upgrades.
+**Retro Options** (Admin Settings):
+- CRT monitor effect with scanlines
+- Film grain overlay
+- Classic cable channel numbers
 
 ---
 
-## 🔐 Security
+## 📱 Mobile Experience
 
-- **CSRF Protection** on all forms
-- **Password Hashing** with Werkzeug
-- **Session Encryption** via Flask secret keys
-- **Default Password Warnings** for new installations
+The TV guide automatically adapts for phones and tablets:
+- Channels stack vertically
+- Movies scroll horizontally within each channel
+- Tap movie posters to see details
+- Tap again to play
+
+Works great for browsing on the couch!
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit issues or pull requests.
 
 ---
 
-## 📄 License
+## 🆘 Support
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 💬 Support
-
-- **Issues:** [GitHub Issues](https://github.com/netpersona/Popcorn/issues)
-- **Documentation:** [Wiki](https://github.com/netpersona/Popcorn/wiki)
+- **Issues**: [GitHub Issues](https://github.com/netpersona/Popcorn/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/netpersona/Popcorn/discussions)
 
 ---
 
-**Made with ❤️ for Plex enthusiasts who miss the golden age of channel surfing**
-- **Custom CSS**: Inline styles in templates for theme-specific styling
+## 🙏 Acknowledgments
+
+**Made with 🍿 for Plex enthusiasts who miss the golden age of channel surfing**
