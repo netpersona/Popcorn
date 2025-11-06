@@ -192,8 +192,8 @@ class PlexAPI:
                     client.playMedia(movie)
                     logger.info(f"Sent playMedia command to {client.title}")
                 except Exception as e:
-                    logger.error(f"Failed to start playback: {e}")
-                    return False, f"Playback failed: {str(e)}. Make sure your Plex client is responding.", 0
+                    logger.error(f"Failed to start playback: {e}", exc_info=True)
+                    return False, "Playback failed. Make sure your Plex client is responding.", 0
                 
                 if offset_ms > 0:
                     import time
@@ -217,7 +217,7 @@ class PlexAPI:
             return False, "Movie not found in Plex library. Try syncing your library in Settings.", 0
         except Exception as e:
             logger.error(f"Unexpected error playing movie: {e}", exc_info=True)
-            return False, f"Error: {str(e)}", 0
+            return False, "An error occurred while trying to play the movie. Please try again.", 0
     
     def get_available_clients(self):
         """
@@ -390,5 +390,5 @@ class PlexAPI:
             return False, "No movie library access found"
             
         except Exception as e:
-            logger.error(f"Failed to verify library access: {e}")
-            return False, f"Cannot access Plex server: {str(e)}"
+            logger.error(f"Failed to verify library access: {e}", exc_info=True)
+            return False, "Cannot access Plex server. Please check your connection."

@@ -390,11 +390,12 @@ class UpdateManager:
             return {'success': True, 'backup_path': backup_path}
             
         except Exception as e:
-            logger.error(f"Update failed: {e}")
-            report('Error', str(e), 0)
+            logger.error(f"Update failed: {e}", exc_info=True)
+            report('Error', 'Update failed. Please check the logs for details.', 0)
             
             if backup_path:
                 logger.info("Attempting to restore from backup...")
                 self.restore_database(backup_path)
             
-            return {'success': False, 'error': str(e), 'backup_path': backup_path}
+            # Do not expose internal error details to clients
+            return {'success': False, 'error': 'Update failed. Please check the logs for details.', 'backup_path': backup_path}
