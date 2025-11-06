@@ -140,22 +140,30 @@ class PlexAPI:
             
             if playback_mode == 'web_player':
                 server_id = self.plex.machineIdentifier
-                
+
+                # Use custom Plex URL if available, otherwise fall back to app.plex.tv
+                if self.base_url and not self.base_url.startswith('http://127.0.0.1') and not self.base_url.startswith('http://localhost'):
+                    # Custom domain - use /web/index.html format
+                    base_web_url = self.base_url.rstrip('/')
+                    web_path = f"/web/index.html#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}"
+                    web_url = f"{base_web_url}{web_path}"
+                else:
+                    # Default to app.plex.tv for local or unset URLs
+                    web_url = f"https://app.plex.tv/desktop/#!/server/{server_id}/details?key=/library/metadata/{plex_id}&context=content.browse.metadata"
+
                 if offset_ms > 0:
                     offset_min = offset_ms // 60000
-                    
+
                     try:
                         movie.updateTimeline(offset_ms, state='stopped', duration=int(movie.duration))
                         logger.info(f"Set resume position to {offset_min} min ({offset_ms}ms) for '{movie.title}'")
                     except Exception as e:
                         logger.warning(f"Failed to set resume position: {e}")
-                    
-                    web_url = f"https://app.plex.tv/desktop/#!/server/{server_id}/details?key=/library/metadata/{plex_id}&context=content.browse.metadata"
+
                     logger.info(f"Generated web player URL for '{movie.title}' with {offset_min} min offset")
                     logger.info(f"FULL URL: {web_url}")
                     return True, web_url, offset_min
                 else:
-                    web_url = f"https://app.plex.tv/desktop/#!/server/{server_id}/details?key=/library/metadata/{plex_id}&context=content.browse.metadata"
                     logger.info(f"Generated web player URL for '{movie.title}'")
                     logger.info(f"FULL URL: {web_url}")
                     return True, web_url, 0
@@ -336,8 +344,16 @@ class PlexAPI:
         try:
             server_id = self.plex.machineIdentifier
             plex_uri = f"plex://library/metadata/{plex_id}"
-            web_url = f"https://app.plex.tv/desktop#!/server/{server_id}/details?key=/library/metadata/{plex_id}"
-            
+
+            # Use custom Plex URL if available, otherwise fall back to app.plex.tv
+            if self.base_url and not self.base_url.startswith('http://127.0.0.1') and not self.base_url.startswith('http://localhost'):
+                # Custom domain - use /web/index.html format
+                base_web_url = self.base_url.rstrip('/')
+                web_url = f"{base_web_url}/web/index.html#!/server/{server_id}/details?key=%2Flibrary%2Fmetadata%2F{plex_id}"
+            else:
+                # Default to app.plex.tv for local or unset URLs
+                web_url = f"https://app.plex.tv/desktop#!/server/{server_id}/details?key=/library/metadata/{plex_id}"
+
             return {
                 'plex_uri': plex_uri,
                 'web_url': web_url,
