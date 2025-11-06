@@ -1052,6 +1052,9 @@ def play(movie_id):
         logger.info(f"Returning web_url to client: {result}")
         return jsonify({'success': True, 'message': message, 'web_url': result, 'offset_min': offset_min})
     else:
+        # Preserve actionable error messages (e.g., "Client not found") but log details
+        if not success:
+            logger.error(f"Playback failed for movie {movie_id}: {result}")
         return jsonify({'success': success, 'message': result, 'offset_min': offset_min if success else 0})
 
 @app.route('/api/favorite/<int:movie_id>', methods=['POST'])
@@ -1138,9 +1141,9 @@ def settings():
                 flash(f'Plex connected successfully! Synced {movie_count} movies and generated schedules.', 'success')
                 return redirect(url_for('settings', plex_saved=1))
             except Exception as e:
-                logger.error(f"Failed to connect to Plex with new settings: {e}")
+                logger.error(f"Failed to connect to Plex with new settings: {e}", exc_info=True)
                 plex_api = None
-                flash(f'Settings saved, but connection failed: {str(e)}', 'error')
+                flash('Settings saved, but connection failed. Please check your Plex URL and token.', 'error')
                 return redirect(url_for('settings', plex_error=1))
         elif 'tmdb_api_key' in request.form:
             tmdb_api_key = request.form.get('tmdb_api_key', '').strip() or None
@@ -1315,7 +1318,7 @@ def test_tmdb_connection():
         logger.error(f"Error testing TMDB connection: {e}", exc_info=True)
         return jsonify({
             'success': False,
-            'message': f'Connection failed: {str(e)}'
+            'message': 'Connection failed. Please verify your API key and try again.'
         })
 
 @app.route('/api/clients')
@@ -1606,7 +1609,8 @@ def update_stream():
             result = updater.perform_update(progress_callback)
             message_queue.put({'done': True, 'result': result})
         except Exception as e:
-            message_queue.put({'error': str(e)})
+            logger.error(f"Update failed: {e}", exc_info=True)
+            message_queue.put({'error': 'Update failed. Please check the logs for details.'})
     
     update_thread = threading.Thread(target=perform_update_async)
     update_thread.daemon = True
@@ -1650,10 +1654,13 @@ def apply_update():
     version_record = session.query(AppVersion).first()
     github_repo = version_record.github_repo if version_record else 'netpersona/Popcorn'
     
-    updater = UpdateManager(github_repo=github_repo)
-    result = updater.perform_update()
-    
-    return jsonify(result)
+    try:
+        updater = UpdateManager(github_repo=github_repo)
+        result = updater.perform_update()
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error applying update: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Update failed. Please try again or check the logs.'})
 
 @app.route('/api/themes/upload', methods=['POST'])
 @login_required
@@ -1691,6 +1698,8 @@ def upload_theme():
             }
         })
     else:
+        # Preserve validation errors to help users fix their theme files
+        logger.error(f"Theme upload failed: {error}")
         return jsonify({'success': False, 'message': error}), 400
 
 @app.route('/api/themes/custom')
@@ -1709,7 +1718,9 @@ def delete_theme(theme_id):
     if success:
         return jsonify({'success': True, 'message': 'Theme deleted successfully'})
     else:
-        return jsonify({'success': False, 'message': error}), 400
+        # Don't expose internal error details
+        logger.error(f"Theme deletion failed: {error}")
+        return jsonify({'success': False, 'message': 'Unable to delete theme. Please try again.'}), 400
 
 @app.route('/deeplink/<int:movie_id>')
 @login_required
@@ -1820,8 +1831,8 @@ def create_holiday_channel():
             return redirect(url_for('settings') + '#holiday-channels')
         except Exception as e:
             db.rollback()
-            logger.error(f"Error creating holiday channel: {e}")
-            flash(f'Error creating channel: {str(e)}', 'error')
+            logger.error(f"Error creating holiday channel: {e}", exc_info=True)
+            flash('Error creating channel. Please check your inputs and try again.', 'error')
             return redirect(url_for('create_holiday_channel'))
     
     db = get_session()
@@ -1900,8 +1911,8 @@ def edit_holiday_channel(id):
             return redirect(url_for('settings') + '#holiday-channels')
         except Exception as e:
             db.rollback()
-            logger.error(f"Error updating holiday channel: {e}")
-            flash(f'Error updating channel: {str(e)}', 'error')
+            logger.error(f"Error updating holiday channel: {e}", exc_info=True)
+            flash('Error updating channel. Please check your inputs and try again.', 'error')
             return redirect(url_for('edit_holiday_channel', id=id))
     
     settings_obj = db.query(Settings).first()
@@ -1936,8 +1947,8 @@ def delete_holiday_channel(id):
         flash(f'Holiday channel "{name}" deleted successfully', 'success')
     except Exception as e:
         db.rollback()
-        logger.error(f"Error deleting holiday channel: {e}")
-        flash(f'Error deleting channel: {str(e)}', 'error')
+        logger.error(f"Error deleting holiday channel: {e}", exc_info=True)
+        flash('Error deleting channel. Please try again.', 'error')
     
     return redirect(url_for('settings') + '#holiday-channels')
 
@@ -2070,8 +2081,8 @@ def add_channel_override(id):
         })
     except Exception as e:
         db.rollback()
-        logger.error(f"Error adding override: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error adding override: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to add override. Please try again.'}), 500
 
 @app.route('/admin/holiday-channels/<int:id>/override/<int:override_id>/delete', methods=['POST'])
 @login_required
@@ -2108,8 +2119,8 @@ def delete_channel_override(id, override_id):
         })
     except Exception as e:
         db.rollback()
-        logger.error(f"Error deleting override: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error deleting override: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to remove override. Please try again.'}), 500
 
 @app.route('/admin/holiday-channels/<int:id>/search-movies')
 @login_required
@@ -2291,8 +2302,8 @@ def apply_channel_suggestions(id):
         })
     except Exception as e:
         db.rollback()
-        logger.error(f"Error applying suggestions: {e}")
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Error applying suggestions: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to apply suggestions. Please try again.'}), 500
 
 if __name__ == '__main__':
     initialize_app()
