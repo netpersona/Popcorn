@@ -2451,6 +2451,12 @@
         setTimeout(initTouchHandlers, 100);
 
         document.addEventListener('keydown', function(e) {
+            // Don't trigger shortcuts if user is typing in an input field
+            const isTyping = e.target.tagName === 'INPUT' || 
+                            e.target.tagName === 'TEXTAREA' || 
+                            e.target.tagName === 'SELECT' ||
+                            e.target.isContentEditable;
+            
             const menu = document.getElementById('nav-menu');
             const isMenuOpen = menu.classList.contains('open');
             
@@ -2461,13 +2467,14 @@
                 return;
             }
             
-            if (e.key.toLowerCase() === 'm') {
+            // Only trigger M and J shortcuts if not typing
+            if (e.key.toLowerCase() === 'm' && !isTyping) {
                 e.preventDefault();
                 toggleMenu();
                 return;
             }
             
-            if (e.key.toLowerCase() === 'j' || e.key === 'Home') {
+            if ((e.key.toLowerCase() === 'j' || e.key === 'Home') && !isTyping) {
                 e.preventDefault();
                 jumpToNow();
                 showToast('info', 'Jumped to Now', 'Viewing current time');
