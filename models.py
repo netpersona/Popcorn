@@ -103,6 +103,18 @@ class Settings(Base):
     def __repr__(self):
         return f"<Settings(frequency='{self.shuffle_frequency}')>"
 
+class ChannelMapping(Base):
+    __tablename__ = 'channel_mappings'
+    
+    id = Column(Integer, primary_key=True)
+    channel_name = Column(String, unique=True, nullable=False)
+    channel_number = Column(Integer, nullable=False)
+    icon = Column(String, nullable=False, default='fa-film')
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<ChannelMapping(name='{self.channel_name}', number={self.channel_number})>"
+
 class Invitation(Base):
     __tablename__ = 'invitations'
     

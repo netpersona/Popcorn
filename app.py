@@ -962,43 +962,10 @@ def index():
 @login_required
 def guide():
     from theme_service import ThemeService
-    from channel_numbers import get_channel_number
+    from channel_numbers import get_channel_number, get_channel_icon
     from watch_history_service import WatchHistoryService
     from models import MovieFavorite
     import json
-    
-    # Genre to icon mapping (using only free Font Awesome 6.x solid icons)
-    GENRE_ICONS = {
-        'Action': 'fa-fire',
-        'Adventure': 'fa-compass',
-        'Animation': 'fa-palette',
-        'Anime': 'fa-dragon',
-        'Biography': 'fa-book',
-        'Comedy': 'fa-face-smile',
-        'Crime': 'fa-user-secret',
-        'Documentary': 'fa-camera',
-        'Drama': 'fa-film',
-        'Family': 'fa-house',
-        'Fantasy': 'fa-hat-wizard',
-        'History': 'fa-landmark',
-        'Horror': 'fa-ghost',
-        'Indie': 'fa-lightbulb',
-        'Music': 'fa-music',
-        'Musical': 'fa-guitar',
-        'Mystery': 'fa-magnifying-glass',
-        'Reality': 'fa-tv',
-        'Romance': 'fa-heart',
-        'Science Fiction': 'fa-rocket',
-        'Short': 'fa-clock',
-        'Sport': 'fa-trophy',
-        'Thriller': 'fa-bolt',
-        'TV Movie': 'fa-video',
-        'War': 'fa-shield',
-        'Western': 'fa-star',
-        'Unknown': 'fa-circle-question',
-        'Cozy Halloween': 'fa-gift',
-        'Scary Halloween': 'fa-skull'
-    }
     
     themes = ThemeService.get_all_themes_for_user(current_user.id)
     
@@ -1063,7 +1030,7 @@ def guide():
         guide_data.append({
             'name': channel,
             'number': get_channel_number(channel),
-            'icon': GENRE_ICONS.get(channel, 'fa-film'),
+            'icon': get_channel_icon(channel),
             'programs': programs
         })
     
