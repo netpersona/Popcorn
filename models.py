@@ -8,7 +8,7 @@ Base = declarative_base()
 
 class Movie(Base):
     __tablename__ = 'movies'
-
+    
     id = Column(Integer, primary_key=True)
     title = Column(String, nullable=False)
     genre = Column(String, nullable=False)
@@ -23,12 +23,12 @@ class Movie(Base):
     content_rating = Column(String)
     cast = Column(String)
     library_name = Column(String)
-
+    
     schedules = relationship('Schedule', back_populates='movie', cascade='all, delete-orphan')
-    overrides = relationship('MovieOverride', cascade='all, delete-orphan')
-    favorites = relationship('MovieFavorite', cascade='all, delete-orphan')
-    watch_history = relationship('WatchHistory')
-
+    overrides = relationship('MovieOverride', back_populates='movie', cascade='all, delete-orphan')
+    favorites = relationship('MovieFavorite', back_populates='movie', cascade='all, delete-orphan')
+    watch_history = relationship('WatchHistory', back_populates='movie')
+    
     __table_args__ = (UniqueConstraint('plex_id', 'genre', name='_plex_genre_uc'),)
     
     def __repr__(self):
@@ -77,7 +77,7 @@ class MovieOverride(Base):
     override_type = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
-    movie = relationship('Movie')
+    movie = relationship('Movie', back_populates='overrides')
     
     __table_args__ = (UniqueConstraint('channel_name', 'movie_id', name='_channel_movie_uc'),)
     
@@ -98,6 +98,7 @@ class Settings(Base):
     tmdb_api_key = Column(String)
     selected_movie_libraries = Column(Text)
     plex_machine_identifier = Column(String)
+    live_tv_enabled = Column(Boolean, default=False)
     
     def __repr__(self):
         return f"<Settings(frequency='{self.shuffle_frequency}')>"
@@ -213,7 +214,7 @@ class CustomTheme(Base):
 
 class WatchHistory(Base):
     __tablename__ = 'watch_history'
-
+    
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     movie_id = Column(Integer, ForeignKey('movies.id', ondelete='SET NULL'))
@@ -223,9 +224,9 @@ class WatchHistory(Base):
     watched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     duration_watched = Column(Integer)
     playback_position = Column(Integer, default=0)
-
+    
     user = relationship('User')
-    movie = relationship('Movie')
+    movie = relationship('Movie', back_populates='watch_history')
     
     def __repr__(self):
         return f"<WatchHistory(user_id={self.user_id}, movie='{self.movie_title}', watched_at='{self.watched_at}')>"
@@ -255,7 +256,7 @@ class MovieFavorite(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     user = relationship('User')
-    movie = relationship('Movie')
+    movie = relationship('Movie', back_populates='favorites')
     
     __table_args__ = (UniqueConstraint('user_id', 'movie_id', name='_user_movie_uc'),)
     

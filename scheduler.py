@@ -63,16 +63,24 @@ class ScheduleGenerator:
         channel_upgrades = {
             'Cozy Halloween': {
                 'keywords': 'halloween,hocus pocus,casper,ghostbusters,addams family,beetlejuice,nightmare before christmas,corpse bride,frankenweenie,coraline,paranorman,goosebumps',
-                'filter_mode': 'AND'
+                'filter_mode': 'AND',
+                'tmdb_keywords': '3335',
+                'min_rating': 6.0
             },
             'Scary Halloween': {
                 'keywords': 'halloween,scream,nightmare on elm street,friday the 13th,evil dead,saw,conjuring,insidious,paranormal activity,exorcist,the ring,the grudge,slasher',
-                'filter_mode': 'AND'
+                'filter_mode': 'AND',
+                'tmdb_collection_ids': '91361,9735,8581',
+                'tmdb_keywords': '3335',
+                'min_rating': 5.5
             },
             'Christmas': {
                 'keywords': 'christmas,xmas,santa claus,grinch,miracle on 34th street,wonderful life,home alone,polar express,jingle all the way,carol,noel,nutcracker,scrooge',
                 'genre_filter': 'comedy,family,drama,animation,fantasy,romance',
-                'filter_mode': 'AND'
+                'filter_mode': 'AND',
+                'tmdb_collection_ids': '9888,53159',
+                'tmdb_keywords': '207317,260365,189966',
+                'min_rating': 6.0
             }
         }
         
@@ -84,7 +92,13 @@ class ScheduleGenerator:
                 existing_channel.filter_mode = upgrades['filter_mode']
                 if 'genre_filter' in upgrades:
                     existing_channel.genre_filter = upgrades['genre_filter']
-                logger.info(f"Upgraded holiday channel '{channel_name}' with improved keywords and AND filter mode")
+                if 'tmdb_collection_ids' in upgrades and not existing_channel.tmdb_collection_ids:
+                    existing_channel.tmdb_collection_ids = upgrades['tmdb_collection_ids']
+                if 'tmdb_keywords' in upgrades and not existing_channel.tmdb_keywords:
+                    existing_channel.tmdb_keywords = upgrades['tmdb_keywords']
+                if 'min_rating' in upgrades and not existing_channel.min_rating:
+                    existing_channel.min_rating = upgrades['min_rating']
+                logger.info(f"Upgraded holiday channel '{channel_name}' with improved filters and TMDB defaults")
         
         self.session.commit()
     
@@ -104,7 +118,9 @@ class ScheduleGenerator:
                 'genre_filter': 'animation,family,fantasy',
                 'keywords': 'halloween,hocus pocus,casper,ghostbusters,addams family,beetlejuice,nightmare before christmas,corpse bride,frankenweenie,coraline,paranorman,goosebumps',
                 'rating_filter': 'G,PG,PG-13',
-                'filter_mode': 'AND'
+                'filter_mode': 'AND',
+                'tmdb_keywords': '3335',
+                'min_rating': 6.0
             },
             {
                 'name': 'Scary Halloween',
@@ -113,7 +129,10 @@ class ScheduleGenerator:
                 'genre_filter': 'horror,thriller',
                 'keywords': 'halloween,scream,nightmare on elm street,friday the 13th,evil dead,saw,conjuring,insidious,paranormal activity,exorcist,the ring,the grudge,slasher',
                 'rating_filter': 'PG-13,R,NR,Not Rated,Unrated',
-                'filter_mode': 'AND'
+                'filter_mode': 'AND',
+                'tmdb_collection_ids': '91361,9735,8581',
+                'tmdb_keywords': '3335',
+                'min_rating': 5.5
             },
             {
                 'name': 'Christmas',
@@ -122,7 +141,10 @@ class ScheduleGenerator:
                 'genre_filter': 'comedy,family,drama,animation,fantasy,romance',
                 'keywords': 'christmas,xmas,santa claus,grinch,miracle on 34th street,wonderful life,home alone,polar express,jingle all the way,carol,noel,nutcracker,scrooge',
                 'rating_filter': None,
-                'filter_mode': 'AND'
+                'filter_mode': 'AND',
+                'tmdb_collection_ids': '9888,53159',
+                'tmdb_keywords': '207317,260365,189966',
+                'min_rating': 6.0
             }
         ]
         
@@ -356,7 +378,7 @@ class ScheduleGenerator:
                 logger.info("Schedules generated within the past month")
                 return
         
-        logger.info("Generating fresh schedules for all channels")
+        logger.info("Generating fresh schedules for all channels and all 7 days")
         
         self.session.query(Schedule).delete()
         
@@ -368,27 +390,30 @@ class ScheduleGenerator:
                 genre_movies[movie.genre] = []
             genre_movies[movie.genre].append(movie)
         
-        for genre, genre_movie_list in genre_movies.items():
-            self.generate_channel_schedule(genre, genre_movie_list)
-        
-        active_holidays = self.get_active_holiday_channels()
-        for holiday_channel in active_holidays:
-            holiday_movies = self.get_movies_for_holiday_channel(holiday_channel)
-            if holiday_movies:
-                self.generate_channel_schedule(holiday_channel.name, holiday_movies)
+        # Generate schedules for all 7 days of the week (0=Monday, 6=Sunday)
+        for day in range(7):
+            for genre, genre_movie_list in genre_movies.items():
+                self.generate_channel_schedule(genre, genre_movie_list, day=day)
+            
+            active_holidays = self.get_active_holiday_channels()
+            for holiday_channel in active_holidays:
+                holiday_movies = self.get_movies_for_holiday_channel(holiday_channel)
+                if holiday_movies:
+                    self.generate_channel_schedule(holiday_channel.name, holiday_movies, day=day)
         
         settings.last_shuffle_date = date.today()
         self.session.commit()
         
-        logger.info("All schedules generated successfully")
+        logger.info("All schedules generated successfully for 7 days")
     
     def get_current_playing(self, channel):
         now = datetime.now()
         current_time = f"{now.hour:02d}:{now.minute:02d}"
+        current_day = now.weekday()  # 0=Monday, 6=Sunday
         
         schedules = self.session.query(Schedule).filter_by(
             channel=channel, 
-            day=0
+            day=current_day
         ).order_by(Schedule.start_time).all()
         
         for schedule in schedules:
@@ -397,10 +422,12 @@ class ScheduleGenerator:
         
         return schedules[0] if schedules else None
     
-    def get_channel_schedule(self, channel):
+    def get_channel_schedule(self, channel, day=None):
+        if day is None:
+            day = datetime.now().weekday()  # Use current day if not specified
         return self.session.query(Schedule).filter_by(
             channel=channel,
-            day=0
+            day=day
         ).order_by(Schedule.start_time).all()
     
     def get_all_channels(self):

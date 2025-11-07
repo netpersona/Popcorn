@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/static/favicon.ico">
     <title>Settings - Popcorn</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -671,6 +672,109 @@
 
                 <div class="settings-card">
                     <div class="card-header">
+                        <h4><i class="fas fa-tv"></i> Live TV Integration (Advanced)</h4>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                            Enable HDHomeRun emulation to integrate Popcorn channels into Plex's native Live TV & DVR feature.
+                            <strong style="color: #e74c3c;">Requires Plex Pass subscription.</strong>
+                        </p>
+                        
+                        <!-- FFmpeg Status -->
+                        <div style="background: {% if ffmpeg_available %}#1e3a2e{% else %}#3a2e1e{% endif %}; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid {% if ffmpeg_available %}#27ae60{% else %}#e67e22{% endif %};">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-{% if ffmpeg_available %}check-circle{% else %}exclamation-triangle{% endif %}" style="color: {% if ffmpeg_available %}#27ae60{% else %}#e67e22{% endif %}; font-size: 1.2rem;"></i>
+                                <div>
+                                    <strong style="font-size: 0.95rem;">FFmpeg Status: {% if ffmpeg_available %}Installed{% else %}Not Installed{% endif %}</strong>
+                                    <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+                                        {{ ffmpeg_message }}
+                                        {% if not ffmpeg_available %}
+                                        <br><strong style="color: #e67e22;">Live TV streaming requires FFmpeg.</strong>
+                                        See installation options below.
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            {% if not ffmpeg_available %}
+                            <details style="margin-top: 10px; cursor: pointer;">
+                                <summary style="color: var(--accent); font-weight: 500; font-size: 0.9rem;">
+                                    <i class="fas fa-book"></i> Installation Options
+                                </summary>
+                                <div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                                    <p style="margin: 0 0 8px 0; font-weight: 500;">Option 1: Auto-install in Docker</p>
+                                    <code style="display: block; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.8rem;">
+                                        # Add to docker-compose.yml:<br>
+                                        environment:<br>
+                                        &nbsp;&nbsp;- INSTALL_FFMPEG=true
+                                    </code>
+                                    
+                                    <p style="margin: 15px 0 8px 0; font-weight: 500;">Option 2: Map from Unraid/Host</p>
+                                    <code style="display: block; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.8rem;">
+                                        # Add to docker-compose.yml:<br>
+                                        volumes:<br>
+                                        &nbsp;&nbsp;- /usr/bin/ffmpeg:/usr/bin/ffmpeg:ro
+                                    </code>
+                                    
+                                    <p style="margin: 15px 0 8px 0; font-weight: 500;">Option 3: Manual Installation</p>
+                                    <code style="display: block; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.8rem;">
+                                        # Ubuntu/Debian:<br>
+                                        sudo apt-get install ffmpeg
+                                    </code>
+                                </div>
+                            </details>
+                            {% endif %}
+                        </div>
+                        
+                        <form method="POST" id="liveTvConfigForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="live_tv_toggle" value="1"/>
+                            
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 12px; padding: 15px; background: var(--bg-tertiary); border-radius: 6px; cursor: pointer;">
+                                    <input type="checkbox" 
+                                           name="live_tv_enabled" 
+                                           id="live_tv_enabled"
+                                           value="1"
+                                           {% if settings.live_tv_enabled %}checked{% endif %}
+                                           style="width: 20px; height: 20px; cursor: pointer;">
+                                    <div>
+                                        <strong style="font-size: 0.95rem;">Enable Live TV & DVR Integration</strong>
+                                        <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+                                            Allows Plex Pass users to add Popcorn channels as native Live TV
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div style="background: #2a3a4d; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid var(--accent);">
+                                <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                    <i class="fas fa-info-circle"></i> <strong>What this does:</strong>
+                                </p>
+                                <ul style="margin: 0 0 15px 0; padding-left: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                                    <li>Emulates an HDHomeRun network tuner device</li>
+                                    <li>Plex will auto-detect Popcorn as a Live TV source</li>
+                                    <li>Channels appear natively in Plex's Live TV guide</li>
+                                    <li>Provides XMLTV EPG data for program listings</li>
+                                    <li>Streams content in MPEG-TS format compatible with Plex</li>
+                                </ul>
+                                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-top: 12px;">
+                                    <i class="fas fa-book"></i>
+                                    <strong style="font-size: 0.9rem;">Need help setting this up?</strong>
+                                    <a href="/livetv/help" style="color: var(--accent); text-decoration: none; margin-left: 8px; font-size: 0.9rem;">
+                                        View the Live TV Setup Guide →
+                                    </a>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                <i class="fas fa-save"></i> Save Live TV Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
                         <h4><i class="fas fa-layer-group"></i> Movie Libraries</h4>
                     </div>
                     <div class="card-body">
@@ -739,63 +843,6 @@
                                 </div>
                             </div>
                         {% endif %}
-                    </div>
-                </div>
-
-                <div class="settings-card">
-                    <div class="card-header">
-                        <h4><i class="fas fa-users"></i> User Management</h4>
-                    </div>
-                    <div class="card-body">
-                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                            Manage user access, create invitations, and configure permissions for your Popcorn instance.
-                        </p>
-                        <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-primary" style="width: 100%; display: inline-block; text-align: center; padding: 12px;">
-                            <i class="fas fa-users-cog"></i> Manage Users
-                        </a>
-                    </div>
-                </div>
-
-                <div class="settings-card">
-                    <div class="card-header">
-                        <h4><i class="fas fa-sync-alt"></i> Schedule Configuration</h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <div class="form-group">
-                                <label for="shuffle_frequency" class="form-label">Reshuffle Frequency</label>
-                                <select name="shuffle_frequency" id="shuffle_frequency" class="form-select">
-                                    <option value="daily" {% if settings.shuffle_frequency == 'daily' %}selected{% endif %}>
-                                        Daily - Reshuffles every day
-                                    </option>
-                                    <option value="weekly" {% if settings.shuffle_frequency == 'weekly' %}selected{% endif %}>
-                                        Weekly - Reshuffles every 7 days
-                                    </option>
-                                    <option value="monthly" {% if settings.shuffle_frequency == 'monthly' %}selected{% endif %}>
-                                        Monthly - Reshuffles every 30 days
-                                    </option>
-                                </select>
-                                <span class="form-text">
-                                    Choose how often the schedule should automatically reshuffle
-                                </span>
-                            </div>
-
-                            {% if settings.last_shuffle_date %}
-                            <div class="form-group">
-                                <label class="form-label">Last Reshuffled</label>
-                                <div class="form-static">{{ settings.last_shuffle_date }}</div>
-                            </div>
-                            {% endif %}
-
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save Settings
-                            </button>
-                            
-                            <button type="submit" name="reshuffle_now" value="1" class="btn btn-warning">
-                                <i class="fas fa-sync"></i> Reshuffle Now
-                            </button>
-                        </form>
                     </div>
                 </div>
 
@@ -889,6 +936,63 @@
                         <button type="button" class="btn btn-warning" onclick="startUpdate()" id="updateNowBtn" style="width: 100%; display: none; background: #fbbf24; color: #000;">
                             <i class="fas fa-download"></i> Update Now
                         </button>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-sync-alt"></i> Schedule Configuration</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <div class="form-group">
+                                <label for="shuffle_frequency" class="form-label">Reshuffle Frequency</label>
+                                <select name="shuffle_frequency" id="shuffle_frequency" class="form-select">
+                                    <option value="daily" {% if settings.shuffle_frequency == 'daily' %}selected{% endif %}>
+                                        Daily - Reshuffles every day
+                                    </option>
+                                    <option value="weekly" {% if settings.shuffle_frequency == 'weekly' %}selected{% endif %}>
+                                        Weekly - Reshuffles every 7 days
+                                    </option>
+                                    <option value="monthly" {% if settings.shuffle_frequency == 'monthly' %}selected{% endif %}>
+                                        Monthly - Reshuffles every 30 days
+                                    </option>
+                                </select>
+                                <span class="form-text">
+                                    Choose how often the schedule should automatically reshuffle
+                                </span>
+                            </div>
+
+                            {% if settings.last_shuffle_date %}
+                            <div class="form-group">
+                                <label class="form-label">Last Reshuffled</label>
+                                <div class="form-static">{{ settings.last_shuffle_date }}</div>
+                            </div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            
+                            <button type="submit" name="reshuffle_now" value="1" class="btn btn-warning">
+                                <i class="fas fa-sync"></i> Reshuffle Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-users"></i> User Management</h4>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                            Manage user access, create invitations, and configure permissions for your Popcorn instance.
+                        </p>
+                        <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-primary" style="width: 100%; display: inline-block; text-align: center; padding: 12px;">
+                            <i class="fas fa-users-cog"></i> Manage Users
+                        </a>
                     </div>
                 </div>
 

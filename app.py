@@ -11,6 +11,8 @@ from plex_api import PlexAPI
 from scheduler import ScheduleGenerator
 from auth import PlexOAuth, create_or_update_plex_user
 from user_management import user_mgmt_bp, validate_invite_code, mark_invite_used
+import livetv
+import utils
 import logging
 from datetime import datetime, timedelta
 from urllib.parse import urlparse, urljoin
@@ -173,6 +175,16 @@ def run_migrations():
             pass
         else:
             logger.warning(f"Error adding plex_machine_identifier: {e}")
+    
+    # Add Live TV enabled flag to settings table if it doesn't exist
+    try:
+        cursor.execute("ALTER TABLE settings ADD COLUMN live_tv_enabled BOOLEAN DEFAULT 0")
+        logger.info("Added column: live_tv_enabled to settings")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e).lower() or "no such table" in str(e).lower():
+            pass
+        else:
+            logger.warning(f"Error adding live_tv_enabled: {e}")
     
     # Add user preference columns to users table if they don't exist
     user_columns = [
@@ -692,6 +704,113 @@ def logout():
     flash('You have been logged out', 'info')
     return redirect(url_for('login'))
 
+@app.route('/discover.json')
+def hdhr_discover():
+    """HDHomeRun device discovery endpoint for Plex auto-detection"""
+    if not livetv.is_live_tv_enabled():
+        return jsonify({"error": "Live TV is not enabled"}), 404
+    
+    return jsonify(livetv.get_discover_data())
+
+@app.route('/lineup_status.json')
+def hdhr_lineup_status():
+    """HDHomeRun lineup status endpoint"""
+    if not livetv.is_live_tv_enabled():
+        return jsonify({"error": "Live TV is not enabled"}), 404
+    
+    return jsonify(livetv.get_lineup_status())
+
+@app.route('/lineup.json')
+def hdhr_lineup():
+    """HDHomeRun channel lineup endpoint"""
+    if not livetv.is_live_tv_enabled():
+        return jsonify({"error": "Live TV is not enabled"}), 404
+    
+    return jsonify(livetv.get_lineup(scheduler))
+
+@app.route('/iptv/playlist.m3u')
+def iptv_playlist():
+    """M3U playlist endpoint for IPTV clients"""
+    if not livetv.is_live_tv_enabled():
+        return "Live TV is not enabled", 404
+    
+    m3u_content = livetv.generate_m3u_playlist(scheduler)
+    response = make_response(m3u_content)
+    response.headers['Content-Type'] = 'audio/x-mpegurl'
+    response.headers['Content-Disposition'] = 'inline; filename=popcorn.m3u'
+    return response
+
+@app.route('/iptv/xmltv.xml')
+def iptv_xmltv():
+    """XMLTV EPG (Electronic Program Guide) endpoint"""
+    if not livetv.is_live_tv_enabled():
+        return "Live TV is not enabled", 404
+    
+    xmltv_content = livetv.generate_xmltv_epg(scheduler)
+    response = make_response(xmltv_content)
+    response.headers['Content-Type'] = 'text/xml; charset=utf-8'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
+
+@app.route('/livetv/stream/<int:channel_num>')
+def livetv_stream(channel_num):
+    """
+    Stream a live TV channel in MPEG-TS format.
+    This endpoint is called by Plex and other IPTV clients.
+    """
+    if not livetv.is_live_tv_enabled():
+        return "Live TV is not enabled", 404
+    
+    if not plex_api:
+        return "Plex is not configured", 500
+    
+    try:
+        # Stream the channel using FFmpeg
+        return app.response_class(
+            livetv.stream_channel(channel_num, plex_api),
+            mimetype='video/mp2t',
+            headers={
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        )
+    except ValueError as e:
+        logger.error(f"Channel streaming error: {e}")
+        return str(e), 404
+    except RuntimeError as e:
+        logger.error(f"FFmpeg error: {e}")
+        return str(e), 500
+    except Exception as e:
+        logger.error(f"Unexpected streaming error: {e}")
+        return "Internal server error", 500
+
+@app.route('/livetv/help')
+def livetv_help():
+    """Help page for Live TV setup and configuration"""
+    base_url = request.url_root
+    
+    # Get device ID from discover data
+    discover_data = livetv.get_discover_data()
+    device_id = discover_data['DeviceID']
+    
+    # Read and render the help page template
+    with open('pages/livetv_help.html', 'r') as f:
+        template = f.read()
+    
+    # Simple template rendering (replace variables)
+    template = template.replace('{{ device_id }}', device_id)
+    template = template.replace('{{ base_url }}', base_url)
+    template = template.replace('{{ xmltv_url }}', f"{base_url}iptv/xmltv.xml")
+    template = template.replace('{{ lineup_url }}', f"{base_url}lineup.json")
+    template = template.replace('{{ url_for(\'settings\') }}', '/settings')
+    template = template.replace('{{ url_for(\'index\') }}', '/')
+    
+    response = make_response(template)
+    response.headers['Content-Type'] = 'text/html'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    return response
+
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
@@ -1155,6 +1274,29 @@ def settings():
             else:
                 flash('TMDB API key removed.', 'success')
             return redirect(url_for('settings'))
+        elif 'live_tv_toggle' in request.form:
+            live_tv_enabled = request.form.get('live_tv_enabled') == '1'
+            
+            # Check FFmpeg availability when enabling Live TV
+            if live_tv_enabled:
+                ffmpeg_available, ffmpeg_msg = utils.check_ffmpeg_available()
+                
+                if not ffmpeg_available:
+                    # Show error with installation instructions
+                    flash('FFmpeg is required for Live TV streaming but is not installed.', 'error')
+                    flash('Option 1: Set environment variable INSTALL_FFMPEG=true in Docker and restart', 'info')
+                    flash('Option 2: Map FFmpeg from host: -v /usr/bin/ffmpeg:/usr/bin/ffmpeg:ro', 'info')
+                    flash('Option 3: Install FFmpeg manually on your system', 'info')
+                    return redirect(url_for('settings'))
+            
+            settings_obj.live_tv_enabled = live_tv_enabled
+            db_session.commit()
+            
+            if live_tv_enabled:
+                flash('Live TV integration enabled! Plex Pass users can now add Popcorn as a Live TV source.', 'success')
+            else:
+                flash('Live TV integration disabled.', 'success')
+            return redirect(url_for('settings'))
         elif 'library_selection' in request.form:
             # Handle library selection changes
             if not plex_api:
@@ -1257,7 +1399,10 @@ def settings():
         except Exception as e:
             logger.error(f"Error fetching movie libraries: {e}")
     
-    return render_template('settings.html', settings=settings_obj, reshuffled=reshuffled, plex_saved=plex_saved, theme_colors=theme_colors, holiday_channels=channels, available_libraries=available_libraries, selected_libraries=selected_libraries)
+    # Check FFmpeg availability for Live TV
+    ffmpeg_available, ffmpeg_message = utils.check_ffmpeg_available()
+    
+    return render_template('settings.html', settings=settings_obj, reshuffled=reshuffled, plex_saved=plex_saved, theme_colors=theme_colors, holiday_channels=channels, available_libraries=available_libraries, selected_libraries=selected_libraries, ffmpeg_available=ffmpeg_available, ffmpeg_message=ffmpeg_message)
 
 @app.route('/settings/test-plex', methods=['POST'])
 @login_required

@@ -735,7 +735,7 @@
             width: 180px;
             background: var(--bg-secondary);
             border-right: 1px solid var(--border);
-            overflow-y: visible;
+            overflow-y: auto;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -744,7 +744,7 @@
 
         .channel-list {
             flex: 1 1 auto;
-            overflow-y: visible;
+            overflow-y: auto;
             min-height: 0;
         }
         
@@ -2326,16 +2326,43 @@
         const guideContent = document.getElementById('guide-content');
         const channelList = document.querySelector('.channel-list');
         
+        // Bidirectional scroll sync with loop prevention
+        let isSyncing = false;
+        
+        // Sync channel list when guide content scrolls
         guideContent.addEventListener('scroll', function() {
-            if (channelList) {
-                channelList.style.transform = `translateY(-${guideContent.scrollTop}px)`;
-            }
+            if (isSyncing || !channelList) return;
+            isSyncing = true;
+            channelList.scrollTop = guideContent.scrollTop;
+            isSyncing = false;
             
             try {
                 localStorage.setItem('popcorn_last_scroll_top', guideContent.scrollTop);
                 localStorage.setItem('popcorn_last_scroll_left', guideContent.scrollLeft);
             } catch(e) {}
         }, { passive: true });
+        
+        // Sync guide content when channel list scrolls
+        if (channelList) {
+            channelList.addEventListener('scroll', function() {
+                if (isSyncing) return;
+                isSyncing = true;
+                guideContent.scrollTop = channelList.scrollTop;
+                isSyncing = false;
+            }, { passive: true });
+        }
+
+        // Forward wheel events from channel rail to guide content for seamless scrolling
+        const channelRail = document.getElementById('channel-rail');
+        if (channelRail) {
+            channelRail.addEventListener('wheel', function(e) {
+                // Only handle vertical scrolling, let horizontal pass through
+                if (Math.abs(e.deltaY) > 0) {
+                    e.preventDefault();
+                    guideContent.scrollTop += e.deltaY;
+                }
+            }, { passive: false });
+        }
 
         function restoreLastPosition() {
             try {
@@ -2344,7 +2371,7 @@
                 if (lastScrollTop !== null) {
                     guideContent.scrollTop = parseInt(lastScrollTop);
                     if (channelList) {
-                        channelList.style.transform = `translateY(-${lastScrollTop}px)`;
+                        channelList.scrollTop = parseInt(lastScrollTop);
                     }
                 }
                 if (lastScrollLeft !== null) {
@@ -2451,6 +2478,12 @@
         setTimeout(initTouchHandlers, 100);
 
         document.addEventListener('keydown', function(e) {
+            // Don't trigger shortcuts if user is typing in an input field
+            const isTyping = e.target.tagName === 'INPUT' || 
+                            e.target.tagName === 'TEXTAREA' || 
+                            e.target.tagName === 'SELECT' ||
+                            e.target.isContentEditable;
+            
             const menu = document.getElementById('nav-menu');
             const isMenuOpen = menu.classList.contains('open');
             
@@ -2461,13 +2494,14 @@
                 return;
             }
             
-            if (e.key.toLowerCase() === 'm') {
+            // Only trigger M and J shortcuts if not typing
+            if (e.key.toLowerCase() === 'm' && !isTyping) {
                 e.preventDefault();
                 toggleMenu();
                 return;
             }
             
-            if (e.key.toLowerCase() === 'j' || e.key === 'Home') {
+            if ((e.key.toLowerCase() === 'j' || e.key === 'Home') && !isTyping) {
                 e.preventDefault();
                 jumpToNow();
                 showToast('info', 'Jumped to Now', 'Viewing current time');
