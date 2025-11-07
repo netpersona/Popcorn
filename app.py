@@ -816,7 +816,6 @@ def livetv_help():
 def profile():
     from theme_service import ThemeService
     from watch_history_service import WatchHistoryService
-    from channel_numbers import CHANNEL_NUMBERS
     import json
     
     themes = ThemeService.get_all_themes_for_user(current_user.id)
@@ -836,8 +835,12 @@ def profile():
     
     watch_stats = WatchHistoryService.get_user_stats(current_user.id)
     
-    # Get all available channels
-    all_channels = sorted(list(CHANNEL_NUMBERS.keys()))
+    # Get all available channels dynamically from actual channels in the database
+    # This includes genre channels from all movies (including French/non-English tags)
+    # and holiday channels that are currently active
+    all_channels = []
+    if scheduler:
+        all_channels = sorted(scheduler.get_all_channels())
     
     # Get user's visible channels (default to all if not set)
     visible_channels = []
