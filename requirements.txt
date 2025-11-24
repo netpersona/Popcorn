@@ -8,7 +8,7 @@ idna==3.11
 itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.3
-PlexAPI==4.17.1
+PlexAPI==4.17.2
 python-dotenv==1.2.1
 requests==2.32.5
 SQLAlchemy==2.0.44
