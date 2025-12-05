@@ -17,3 +17,4 @@ urllib3==2.5.0
 Werkzeug==3.1.4
 flask-login
 Flask-WTF
+unidecode

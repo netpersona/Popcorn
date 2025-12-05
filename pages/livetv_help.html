@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/static/favicon.ico">
+    <title>Live TV Setup Guide - Popcorn</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            border-bottom: 3px solid #e5a00d;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            color: #e5a00d;
+            margin-bottom: 10px;
+        }
+
+        .alert {
+            background: #1a3d5c;
+            border: 1px solid #2a5d8c;
+            border-left: 4px solid #3b82f6;
+            color: #93c5fd;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 30px;
+        }
+
+        .alert strong {
+            color: #60a5fa;
+        }
+
+        .content-section {
+            background: #2a2a2a;
+            border: 1px solid #3a3a3a;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: #e5a00d;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h3 {
+            color: #f0f0f0;
+            font-size: 1.2rem;
+            margin-top: 20px;
+            margin-bottom: 12px;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+            color: #c0c0c0;
+        }
+
+        ol, ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+            color: #c0c0c0;
+        }
+
+        ul ul {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        code {
+            background: #1a1a1a;
+            border: 1px solid #3a3a3a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #4ade80;
+        }
+
+        strong {
+            color: #f0f0f0;
+        }
+
+        .info-box {
+            background: #1a2a3a;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .warning-box {
+            background: #3a2a1a;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            color: #fbbf24;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #e5a00d;
+            color: #1a1a1a;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.2s;
+            margin-right: 10px;
+            margin-top: 20px;
+        }
+
+        .btn:hover {
+            background: #cc9000;
+        }
+
+        .btn-secondary {
+            background: #3a3a3a;
+            color: #e0e0e0;
+        }
+
+        .btn-secondary:hover {
+            background: #4a4a4a;
+        }
+
+        a {
+            color: #e5a00d;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .endpoint-list {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #3a3a3a;
+        }
+
+        .channel-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .channel-item {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            border-left: 3px solid #e5a00d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-tv"></i> Live TV Setup Guide</h1>
+            <p style="margin: 0; color: #c0c0c0;">How to integrate Popcorn with Plex's Live TV & DVR</p>
+        </div>
+
+        <div class="alert">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Requirements:</strong> The Live TV feature requires a <strong>Plex Pass</strong> subscription. 
+                This feature allows your automated movie channels to appear as native Live TV channels in Plex.
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2><i class="fas fa-question-circle"></i> What is Live TV?</h2>
+            <p>
+                Popcorn's Live TV feature emulates an HDHomeRun tuner device, allowing Plex to discover and 
+                integrate your automated movie channels as native Live TV channels. This provides a seamless 
+                viewing experience within Plex's Live TV & DVR interface.
+            </p>
+        </div>
+
+        <div class="content-section">
+            <h2><i class="fas fa-cog"></i> Setup Instructions</h2>
+            
+            <h3>Step 1: Enable Live TV in Popcorn</h3>
+            <ol>
+                <li>Go to the <a href="/settings">Settings page</a></li>
+                <li>Scroll to the "Live TV Integration" section</li>
+                <li>Check the "Enable Live TV & DVR Integration" checkbox</li>
+                <li>Click "Save Live TV Settings"</li>
+            </ol>
+
+            <h3>Step 2: Add Popcorn as a Live TV Source in Plex</h3>
+            <ol>
+                <li>Open Plex and go to <strong>Settings</strong></li>
+                <li>Navigate to <strong>Live TV & DVR</strong></li>
+                <li>Click <strong>Set Up Plex DVR</strong> (or <strong>Add Device</strong> if you already have DVR configured)</li>
+                <li>Plex should automatically detect Popcorn as an HDHomeRun device
+                    <ul>
+                        <li>Device name: <strong>Popcorn</strong></li>
+                        <li>Device ID: <strong>{{ device_id }}</strong></li>
+                    </ul>
+                </li>
+                <li>Select the Popcorn device and click <strong>Continue</strong></li>
+                <li>Plex will scan for channels - all your Popcorn channels should appear</li>
+                <li>Select the channels you want and click <strong>Continue</strong></li>
+                <li>Configure the EPG (Electronic Program Guide):
+                    <ul>
+                        <li>When prompted for program guide data, select <strong>Have an XMLTV guide</strong></li>
+                        <li>Enter the XMLTV URL: <code>{{ xmltv_url }}</code></li>
+                    </ul>
+                </li>
+                <li>Complete the setup wizard</li>
+            </ol>
+
+            <h3>Step 3: Verify Your Channels</h3>
+            <ol>
+                <li>In Plex, navigate to <strong>Live TV</strong> from the main menu</li>
+                <li>You should see all your Popcorn channels listed with their current programming</li>
+                <li>Click on a channel to start watching</li>
+            </ol>
+        </div>
+
+        <div class="content-section">
+            <h2><i class="fas fa-code"></i> Technical Details</h2>
+            
+            <h3>API Endpoints</h3>
+            <p>The following endpoints are available for Live TV:</p>
+            <div class="endpoint-list">
+                <ul>
+                    <li><strong>Device Discovery:</strong> <code>{{ base_url }}discover.json</code></li>
+                    <li><strong>Device Status:</strong> <code>{{ base_url }}device.xml</code></li>
+                    <li><strong>Channel Lineup:</strong> <code>{{ base_url }}lineup.json</code></li>
+                    <li><strong>Lineup Status:</strong> <code>{{ base_url }}lineup_status.json</code></li>
+                    <li><strong>M3U Playlist:</strong> <code>{{ base_url }}iptv/playlist.m3u</code></li>
+                    <li><strong>XMLTV EPG:</strong> <code>{{ base_url }}iptv/xmltv.xml</code></li>
+                    <li><strong>Stream:</strong> <code>{{ base_url }}livetv/stream/&lt;channel_number&gt;</code></li>
+                </ul>
+            </div>
+
+            <h3>Channel Numbers</h3>
+            <p>Each Popcorn channel is assigned a unique channel number based on its genre:</p>
+            <div class="channel-list">
+                <div class="channel-item"><strong>101:</strong> Action</div>
+                <div class="channel-item"><strong>102:</strong> Comedy</div>
+                <div class="channel-item"><strong>103:</strong> Drama</div>
+                <div class="channel-item"><strong>104:</strong> Horror</div>
+                <div class="channel-item"><strong>105:</strong> Sci-Fi</div>
+                <div class="channel-item"><strong>106:</strong> Romance</div>
+                <div class="channel-item"><strong>107:</strong> Thriller</div>
+                <div class="channel-item"><strong>108:</strong> Animation</div>
+            </div>
+        </div>
+
+        <div class="content-section">
+            <h2><i class="fas fa-wrench"></i> Troubleshooting</h2>
+            
+            <h3>Plex Doesn't Detect Popcorn</h3>
+            <ul>
+                <li>Ensure Live TV is enabled in Popcorn's settings</li>
+                <li>Verify that Plex and Popcorn are on the same network</li>
+                <li>Try manually entering the discovery URL: <code>{{ base_url }}discover.json</code></li>
+                <li>Check that your Popcorn server is accessible from Plex</li>
+            </ul>
+
+            <h3>Channels Not Appearing</h3>
+            <ul>
+                <li>Verify that you have schedules configured for your channels</li>
+                <li>Check the lineup endpoint: <a href="{{ lineup_url }}" target="_blank">View Lineup</a></li>
+                <li>Rescan channels in Plex's Live TV settings</li>
+            </ul>
+
+            <h3>Program Guide Not Showing</h3>
+            <ul>
+                <li>Verify the XMLTV URL is correct: <code>{{ xmltv_url }}</code></li>
+                <li>Check the XMLTV feed: <a href="{{ xmltv_url }}" target="_blank">View XMLTV</a></li>
+                <li>Refresh the guide data in Plex's Live TV settings</li>
+            </ul>
+
+            <h3>Streaming Issues</h3>
+            <ul>
+                <li>Ensure FFmpeg is installed and working</li>
+                <li>Check that your Plex server has access to the movie files</li>
+                <li>Verify that the correct movie is scheduled for the current time</li>
+                <li>Check server logs for FFmpeg errors</li>
+            </ul>
+        </div>
+
+        <div class="content-section">
+            <h2><i class="fas fa-lightbulb"></i> How It Works</h2>
+            <p>Popcorn's Live TV feature works by:</p>
+            <ol>
+                <li><strong>Emulating an HDHomeRun device</strong> - Plex sees Popcorn as a hardware TV tuner</li>
+                <li><strong>Generating a channel lineup</strong> - Each Popcorn channel becomes a TV channel</li>
+                <li><strong>Creating an EPG (Electronic Program Guide)</strong> - 7 days of programming based on your schedules</li>
+                <li><strong>Streaming in real-time</strong> - When you tune to a channel, Popcorn:
+                    <ul>
+                        <li>Determines what movie should be playing based on the schedule</li>
+                        <li>Calculates the offset (how far into the movie you should be)</li>
+                        <li>Streams from that point using FFmpeg in MPEG-TS format</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="warning-box">
+            <strong><i class="fas fa-exclamation-triangle"></i> Note:</strong> The Live TV feature is disabled by default and requires a Plex Pass subscription. 
+            This is because Plex's Live TV & DVR features are only available to Plex Pass subscribers.
+        </div>
+
+        <div style="margin-top: 30px;">
+            <a href="/settings" class="btn"><i class="fas fa-cog"></i> Go to Settings</a>
+            <a href="/" class="btn btn-secondary"><i class="fas fa-home"></i> Back to Home</a>
+        </div>
+    </div>
+</body>
+</html>

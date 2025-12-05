@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/static/favicon.ico">
     <title>Settings - Popcorn</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -671,6 +672,103 @@
 
                 <div class="settings-card">
                     <div class="card-header">
+                        <h4><i class="fas fa-tv"></i> Live TV Integration (Advanced)</h4>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-secondary); margin-bottom: 15px;">
+                            Enable HDHomeRun emulation to integrate Popcorn channels into Plex's native Live TV & DVR feature.
+                            <strong style="color: #e74c3c;">Requires Plex Pass subscription.</strong>
+                        </p>
+                        
+                        <!-- FFmpeg Status -->
+                        <div style="background: {% if ffmpeg_available %}#1e3a2e{% else %}#3a2e1e{% endif %}; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid {% if ffmpeg_available %}#27ae60{% else %}#e67e22{% endif %};">
+                            <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                                    <i class="fas fa-{% if ffmpeg_available %}check-circle{% else %}exclamation-triangle{% endif %}" style="color: {% if ffmpeg_available %}#27ae60{% else %}#e67e22{% endif %}; font-size: 1.2rem;"></i>
+                                    <div>
+                                        <strong style="font-size: 0.95rem;">FFmpeg Status: {% if ffmpeg_available %}Installed{% else %}Not Installed{% endif %}</strong>
+                                        <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+                                            {{ ffmpeg_message }}
+                                            {% if not ffmpeg_available %}
+                                            <br><strong style="color: #e67e22;">Live TV streaming requires FFmpeg.</strong>
+                                            Click Install to download automatically (~100MB).
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div>
+                                    {% if ffmpeg_available %}
+                                    <button type="button" id="removeFFmpegBtn" class="btn btn-danger" style="padding: 8px 16px; font-size: 0.85rem;">
+                                        <i class="fas fa-trash"></i> Remove FFmpeg
+                                    </button>
+                                    {% else %}
+                                    <button type="button" id="installFFmpegBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 0.85rem;">
+                                        <i class="fas fa-download"></i> Install FFmpeg
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div id="ffmpegInstallProgress" style="display: none; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-spinner fa-spin" style="color: var(--accent);"></i>
+                                    <span id="ffmpegInstallStatus">Downloading FFmpeg...</span>
+                                </div>
+                                <div style="margin-top: 8px; background: rgba(0,0,0,0.3); height: 20px; border-radius: 10px; overflow: hidden;">
+                                    <div id="ffmpegInstallBar" style="background: linear-gradient(90deg, #27ae60, #2ecc71); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <form method="POST" id="liveTvConfigForm">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="live_tv_toggle" value="1"/>
+                            
+                            <div class="form-group">
+                                <label style="display: flex; align-items: center; gap: 12px; padding: 15px; background: var(--bg-tertiary); border-radius: 6px; cursor: pointer;">
+                                    <input type="checkbox" 
+                                           name="live_tv_enabled" 
+                                           id="live_tv_enabled"
+                                           value="1"
+                                           {% if settings.live_tv_enabled %}checked{% endif %}
+                                           style="width: 20px; height: 20px; cursor: pointer;">
+                                    <div>
+                                        <strong style="font-size: 0.95rem;">Enable Live TV & DVR Integration</strong>
+                                        <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+                                            Allows Plex Pass users to add Popcorn channels as native Live TV
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div style="background: #2a3a4d; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid var(--accent);">
+                                <p style="margin: 0 0 10px 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                    <i class="fas fa-info-circle"></i> <strong>What this does:</strong>
+                                </p>
+                                <ul style="margin: 0 0 15px 0; padding-left: 20px; color: var(--text-secondary); font-size: 0.85rem;">
+                                    <li>Emulates an HDHomeRun network tuner device</li>
+                                    <li>Plex will auto-detect Popcorn as a Live TV source</li>
+                                    <li>Channels appear natively in Plex's Live TV guide</li>
+                                    <li>Provides XMLTV EPG data for program listings</li>
+                                    <li>Streams content in MPEG-TS format compatible with Plex</li>
+                                </ul>
+                                <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-top: 12px;">
+                                    <i class="fas fa-book"></i>
+                                    <strong style="font-size: 0.9rem;">Need help setting this up?</strong>
+                                    <a href="/livetv/help" style="color: var(--accent); text-decoration: none; margin-left: 8px; font-size: 0.9rem;">
+                                        View the Live TV Setup Guide →
+                                    </a>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                <i class="fas fa-save"></i> Save Live TV Settings
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
                         <h4><i class="fas fa-layer-group"></i> Movie Libraries</h4>
                     </div>
                     <div class="card-body">
@@ -739,63 +837,6 @@
                                 </div>
                             </div>
                         {% endif %}
-                    </div>
-                </div>
-
-                <div class="settings-card">
-                    <div class="card-header">
-                        <h4><i class="fas fa-users"></i> User Management</h4>
-                    </div>
-                    <div class="card-body">
-                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                            Manage user access, create invitations, and configure permissions for your Popcorn instance.
-                        </p>
-                        <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-primary" style="width: 100%; display: inline-block; text-align: center; padding: 12px;">
-                            <i class="fas fa-users-cog"></i> Manage Users
-                        </a>
-                    </div>
-                </div>
-
-                <div class="settings-card">
-                    <div class="card-header">
-                        <h4><i class="fas fa-sync-alt"></i> Schedule Configuration</h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <div class="form-group">
-                                <label for="shuffle_frequency" class="form-label">Reshuffle Frequency</label>
-                                <select name="shuffle_frequency" id="shuffle_frequency" class="form-select">
-                                    <option value="daily" {% if settings.shuffle_frequency == 'daily' %}selected{% endif %}>
-                                        Daily - Reshuffles every day
-                                    </option>
-                                    <option value="weekly" {% if settings.shuffle_frequency == 'weekly' %}selected{% endif %}>
-                                        Weekly - Reshuffles every 7 days
-                                    </option>
-                                    <option value="monthly" {% if settings.shuffle_frequency == 'monthly' %}selected{% endif %}>
-                                        Monthly - Reshuffles every 30 days
-                                    </option>
-                                </select>
-                                <span class="form-text">
-                                    Choose how often the schedule should automatically reshuffle
-                                </span>
-                            </div>
-
-                            {% if settings.last_shuffle_date %}
-                            <div class="form-group">
-                                <label class="form-label">Last Reshuffled</label>
-                                <div class="form-static">{{ settings.last_shuffle_date }}</div>
-                            </div>
-                            {% endif %}
-
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save Settings
-                            </button>
-                            
-                            <button type="submit" name="reshuffle_now" value="1" class="btn btn-warning">
-                                <i class="fas fa-sync"></i> Reshuffle Now
-                            </button>
-                        </form>
                     </div>
                 </div>
 
@@ -889,6 +930,63 @@
                         <button type="button" class="btn btn-warning" onclick="startUpdate()" id="updateNowBtn" style="width: 100%; display: none; background: #fbbf24; color: #000;">
                             <i class="fas fa-download"></i> Update Now
                         </button>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-sync-alt"></i> Schedule Configuration</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <div class="form-group">
+                                <label for="shuffle_frequency" class="form-label">Reshuffle Frequency</label>
+                                <select name="shuffle_frequency" id="shuffle_frequency" class="form-select">
+                                    <option value="daily" {% if settings.shuffle_frequency == 'daily' %}selected{% endif %}>
+                                        Daily - Reshuffles every day
+                                    </option>
+                                    <option value="weekly" {% if settings.shuffle_frequency == 'weekly' %}selected{% endif %}>
+                                        Weekly - Reshuffles every 7 days
+                                    </option>
+                                    <option value="monthly" {% if settings.shuffle_frequency == 'monthly' %}selected{% endif %}>
+                                        Monthly - Reshuffles every 30 days
+                                    </option>
+                                </select>
+                                <span class="form-text">
+                                    Choose how often the schedule should automatically reshuffle
+                                </span>
+                            </div>
+
+                            {% if settings.last_shuffle_date %}
+                            <div class="form-group">
+                                <label class="form-label">Last Reshuffled</label>
+                                <div class="form-static">{{ settings.last_shuffle_date }}</div>
+                            </div>
+                            {% endif %}
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                            
+                            <button type="submit" name="reshuffle_now" value="1" class="btn btn-warning">
+                                <i class="fas fa-sync"></i> Reshuffle Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-users"></i> User Management</h4>
+                    </div>
+                    <div class="card-body">
+                        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+                            Manage user access, create invitations, and configure permissions for your Popcorn instance.
+                        </p>
+                        <a href="{{ url_for('user_mgmt.list_users') }}" class="btn btn-primary" style="width: 100%; display: inline-block; text-align: center; padding: 12px;">
+                            <i class="fas fa-users-cog"></i> Manage Users
+                        </a>
                     </div>
                 </div>
 
@@ -1186,6 +1284,121 @@
         function closeUpdateModal() {
             document.getElementById('updateModal').style.display = 'none';
         }
+
+        // FFmpeg installation handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const installBtn = document.getElementById('installFFmpegBtn');
+            const removeBtn = document.getElementById('removeFFmpegBtn');
+            const progressDiv = document.getElementById('ffmpegInstallProgress');
+            const statusSpan = document.getElementById('ffmpegInstallStatus');
+            const progressBar = document.getElementById('ffmpegInstallBar');
+
+            if (installBtn) {
+                installBtn.addEventListener('click', function() {
+                    if (!confirm('Download and install FFmpeg (~100MB)? This will take 2-3 minutes and persists across container restarts.')) {
+                        return;
+                    }
+
+                    installBtn.disabled = true;
+                    progressDiv.style.display = 'block';
+                    statusSpan.textContent = 'Initializing...';
+                    statusSpan.style.color = '';
+                    progressBar.style.width = '0%';
+
+                    // Use Server-Sent Events for real-time progress
+                    const eventSource = new EventSource('/api/ffmpeg/install/stream');
+
+                    eventSource.onmessage = function(event) {
+                        const data = JSON.parse(event.data);
+
+                        if (data.heartbeat) {
+                            return;
+                        }
+
+                        if (data.step && data.message) {
+                            statusSpan.textContent = data.step + ': ' + data.message;
+                            progressBar.style.width = data.progress + '%';
+                        }
+
+                        if (data.done) {
+                            eventSource.close();
+
+                            if (data.result.success) {
+                                statusSpan.textContent = 'Installation complete! FFmpeg is ready to use.';
+                                statusSpan.style.color = '#27ae60';
+                                progressBar.style.width = '100%';
+                                
+                                // Show success message and reload
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 2000);
+                            } else {
+                                statusSpan.textContent = 'Installation failed: ' + (data.result.error || 'Unknown error');
+                                statusSpan.style.color = '#e74c3c';
+                                installBtn.disabled = false;
+                                progressBar.style.width = '0%';
+                            }
+                        }
+
+                        if (data.error) {
+                            eventSource.close();
+                            statusSpan.textContent = 'Error: ' + data.error;
+                            statusSpan.style.color = '#e74c3c';
+                            installBtn.disabled = false;
+                            progressBar.style.width = '0%';
+                        }
+                    };
+
+                    eventSource.onerror = function() {
+                        eventSource.close();
+                        statusSpan.textContent = 'Connection error during installation';
+                        statusSpan.style.color = '#e74c3c';
+                        installBtn.disabled = false;
+                        progressBar.style.width = '0%';
+                    };
+                });
+            }
+
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    if (!confirm('Remove FFmpeg installation? This will disable Live TV streaming until you reinstall.')) {
+                        return;
+                    }
+
+                    removeBtn.disabled = true;
+                    progressDiv.style.display = 'block';
+                    statusSpan.textContent = 'Removing FFmpeg...';
+                    progressBar.style.width = '50%';
+
+                    fetch('/api/ffmpeg/remove', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            statusSpan.textContent = 'FFmpeg removed successfully! Reloading...';
+                            progressBar.style.width = '100%';
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            statusSpan.textContent = 'Removal failed: ' + (data.error || 'Unknown error');
+                            statusSpan.style.color = '#e74c3c';
+                            removeBtn.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        statusSpan.textContent = 'Network error: ' + error.message;
+                        statusSpan.style.color = '#e74c3c';
+                        removeBtn.disabled = false;
+                    });
+                });
+            }
+        });
 
         // Check for updates on page load
         window.addEventListener('load', function() {
