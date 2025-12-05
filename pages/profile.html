@@ -1203,6 +1203,14 @@
                 <button class="close-btn" onclick="closeDevicesModal()">&times;</button>
             </div>
             <div class="modal-body">
+                <div style="background: var(--background-secondary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent);">
+                    <p style="margin: 0; color: var(--text-primary); font-size: 0.95rem;">
+                        <i class="fas fa-lightbulb" style="color: var(--accent); margin-right: 8px;"></i>
+                        <strong>Tip:</strong> For instant detection, start playing any movie on your device first. 
+                        Devices currently streaming will appear at the top with a ▶ indicator.
+                    </p>
+                </div>
+                
                 <div id="devices-loading" style="text-align: center; padding: 20px; color: var(--text-secondary);">
                     <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i>
                     <p>Searching for Plex clients...</p>
@@ -1233,6 +1241,14 @@
                 <button class="close-btn" onclick="closeSaveDeviceModal()">&times;</button>
             </div>
             <div class="modal-body">
+                <div style="background: var(--background-secondary); padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid var(--accent);">
+                    <p style="margin: 0; color: var(--text-primary); font-size: 0.95rem;">
+                        <i class="fas fa-lightbulb" style="color: var(--accent); margin-right: 8px;"></i>
+                        <strong>Tip:</strong> For instant detection, start playing any movie on your device first. 
+                        Devices currently streaming will appear at the top with a ▶ indicator.
+                    </p>
+                </div>
+                
                 <div id="save-devices-loading" style="text-align: center; padding: 20px; color: var(--text-secondary);">
                     <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 10px;"></i>
                     <p>Searching for Plex clients...</p>
@@ -1382,17 +1398,34 @@
                         const icon = getDeviceIcon(client.product, client.platform);
                         const deviceItem = document.createElement('div');
                         deviceItem.className = 'device-item';
+                        
+                        // Add active-session class for visual distinction
+                        if (client.is_active_session) {
+                            deviceItem.classList.add('active-session');
+                        }
+                        
                         deviceItem.dataset.identifier = client.identifier;
                         deviceItem.dataset.name = client.name;
                         deviceItem.dataset.product = client.product || '';
                         deviceItem.dataset.platform = client.platform || '';
                         deviceItem.style.cursor = 'pointer';
                         
+                        // Build device details text
+                        let detailsText = `${escapeHtml(client.product)} • ${escapeHtml(client.platform)}`;
+                        
+                        // Add "playing now" indicator if active session
+                        const activeIndicator = client.is_active_session ? 
+                            '<span style="color: var(--accent); font-weight: 600; margin-right: 5px;">▶</span>' : '';
+                        
+                        const playingInfo = client.is_active_session && client.playing_title ? 
+                            `<div class="device-playing" style="font-size: 0.85rem; color: var(--accent); margin-top: 2px;">Now playing: ${escapeHtml(client.playing_title)}</div>` : '';
+                        
                         deviceItem.innerHTML = `
                             <i class="${icon}"></i>
                             <div class="device-info">
-                                <div class="device-name">${escapeHtml(client.name)}</div>
-                                <div class="device-details">${escapeHtml(client.product)} • ${escapeHtml(client.platform)}</div>
+                                <div class="device-name">${activeIndicator}${escapeHtml(client.name)}</div>
+                                <div class="device-details">${detailsText}</div>
+                                ${playingInfo}
                             </div>
                             <i class="fas fa-chevron-right device-select-icon"></i>
                         `;
@@ -1671,6 +1704,12 @@
                         const icon = getDeviceIcon(client.product, client.platform);
                         const deviceItem = document.createElement('div');
                         deviceItem.className = 'device-item';
+                        
+                        // Add active-session class for visual distinction
+                        if (client.is_active_session) {
+                            deviceItem.classList.add('active-session');
+                        }
+                        
                         deviceItem.style.cssText = 'cursor: default; display: flex; align-items: center; justify-content: space-between;';
                         
                         const saveButton = document.createElement('button');
@@ -1685,11 +1724,22 @@
                             );
                         };
                         
+                        // Build device details text
+                        let detailsText = `${escapeHtml(client.product)} • ${escapeHtml(client.platform)}`;
+                        
+                        // Add "playing now" indicator if active session
+                        const activeIndicator = client.is_active_session ? 
+                            '<span style="color: var(--accent); font-weight: 600; margin-right: 5px;">▶</span>' : '';
+                        
+                        const playingInfo = client.is_active_session && client.playing_title ? 
+                            `<div class="device-playing" style="font-size: 0.85rem; color: var(--accent); margin-top: 2px;">Now playing: ${escapeHtml(client.playing_title)}</div>` : '';
+                        
                         deviceItem.innerHTML = `
                             <i class="${icon}"></i>
                             <div class="device-info">
-                                <div class="device-name">${escapeHtml(client.name)}</div>
-                                <div class="device-details">${escapeHtml(client.product)} • ${escapeHtml(client.platform)}</div>
+                                <div class="device-name">${activeIndicator}${escapeHtml(client.name)}</div>
+                                <div class="device-details">${detailsText}</div>
+                                ${playingInfo}
                             </div>
                         `;
                         deviceItem.appendChild(saveButton);

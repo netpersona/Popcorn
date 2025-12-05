@@ -254,6 +254,8 @@ class PlexAPI:
                 logger.warning(f"Could not get GDM clients: {e}")
 
             # Method 2: Currently playing sessions
+            # Store session metadata for later matching with MyPlex resources
+            active_sessions = {}
             try:
                 sessions = self.plex.sessions()
                 logger.info(f"Method 2 (Sessions): Found {len(sessions)} active session(s)")
@@ -261,20 +263,58 @@ class PlexAPI:
                 for session in sessions:
                     if hasattr(session, 'player') and session.player:
                         player = session.player
-                        identifier = player.machineIdentifier if hasattr(player, 'machineIdentifier') else f"session_{player.title}"
-
-                        # Don't overwrite GDM clients (they're more reliable)
-                        if identifier not in client_map:
-                            platform = player.platform if hasattr(player, 'platform') and player.platform else 'Unknown'
-
-                            client_map[identifier] = {
+                        
+                        # Get what's currently playing
+                        playing_title = session.title if hasattr(session, 'title') else 'Unknown'
+                        platform = player.platform if hasattr(player, 'platform') and player.platform else 'Unknown'
+                        
+                        # If session has machineIdentifier, mark it directly
+                        if hasattr(player, 'machineIdentifier') and player.machineIdentifier:
+                            identifier = player.machineIdentifier
+                            
+                            if identifier in client_map:
+                                # Update existing client
+                                client_map[identifier]['is_active_session'] = True
+                                client_map[identifier]['playing_title'] = playing_title
+                                client_map[identifier]['source'] = 'Currently Playing'
+                                logger.info(f"  → Updated to Active Session: {player.title} (playing: {playing_title})")
+                            else:
+                                # Add new client
+                                client_map[identifier] = {
+                                    'name': player.title or 'Unknown Player',
+                                    'product': player.product if hasattr(player, 'product') else 'Unknown',
+                                    'identifier': identifier,
+                                    'platform': platform,
+                                    'source': 'Currently Playing',
+                                    'is_active_session': True,
+                                    'playing_title': playing_title
+                                }
+                                logger.info(f"  → Playing: {player.title} (playing: {playing_title})")
+                        else:
+                            # No machineIdentifier - store for matching with MyPlex resources
+                            # Use multiple matching keys for better success rate
+                            player_name = (player.title or 'Unknown Player').lower().strip()
+                            player_product = (player.product if hasattr(player, 'product') else 'Unknown').lower().strip()
+                            
+                            # Create both exact and normalized keys
+                            exact_key = f"{player.title}_{player.product if hasattr(player, 'product') else 'Unknown'}"
+                            normalized_key = f"{player_name}_{player_product}"
+                            
+                            session_info = {
                                 'name': player.title or 'Unknown Player',
                                 'product': player.product if hasattr(player, 'product') else 'Unknown',
-                                'identifier': identifier,
+                                'playing_title': playing_title,
                                 'platform': platform,
-                                'source': 'Playing Now'
+                                'exact_key': exact_key,
+                                'normalized_key': normalized_key
                             }
-                            logger.info(f"  → Playing: {player.title}")
+                            
+                            # Store with both keys for flexible matching
+                            active_sessions[exact_key] = session_info
+                            active_sessions[normalized_key] = session_info
+                            
+                            logger.info(f"  → Pending match: {player.title} (no machineID, will match with MyPlex)")
+                            logger.debug(f"    Match keys: exact={exact_key}, normalized={normalized_key}")
             except Exception as e:
                 logger.warning(f"Could not get active sessions: {e}")
 
@@ -324,27 +364,75 @@ class PlexAPI:
                     logger.info(f"Method 3 (MyPlex): Found {len(client_resources)} registered client(s)")
 
                     for resource in client_resources:
-                        # Don't overwrite active clients
+                        # Try to match this resource with a pending active session
+                        # Try both exact and normalized matching
+                        exact_key = f"{resource.name}_{resource.product if hasattr(resource, 'product') else 'Unknown'}"
+                        normalized_key = f"{(resource.name or '').lower().strip()}_{(resource.product if hasattr(resource, 'product') else 'Unknown').lower().strip()}"
+                        
+                        session_data = active_sessions.get(exact_key) or active_sessions.get(normalized_key)
+                        
                         if resource.clientIdentifier not in client_map:
                             platform = resource.platform if hasattr(resource, 'platform') and resource.platform else 'Unknown'
 
-                            client_map[resource.clientIdentifier] = {
-                                'name': resource.name or 'Unknown Device',
-                                'product': resource.product if hasattr(resource, 'product') else 'Unknown',
-                                'identifier': resource.clientIdentifier,
-                                'platform': platform,
-                                'source': 'Registered (may be offline)'
-                            }
-                            logger.info(f"  → Registered: {resource.name} ({resource.product})")
+                            # If we have a matching active session, apply those flags to this resource
+                            if session_data:
+                                client_map[resource.clientIdentifier] = {
+                                    'name': resource.name or 'Unknown Device',
+                                    'product': resource.product if hasattr(resource, 'product') else 'Unknown',
+                                    'identifier': resource.clientIdentifier,
+                                    'platform': platform,
+                                    'source': 'Currently Playing',  # Promote to active since it's playing
+                                    'is_active_session': True,
+                                    'playing_title': session_data['playing_title']
+                                }
+                                logger.info(f"  → Matched active session to resource: {resource.name} (playing: {session_data['playing_title']})")
+                                # Remove matched keys from pending list
+                                if exact_key in active_sessions:
+                                    del active_sessions[exact_key]
+                                if normalized_key in active_sessions:
+                                    del active_sessions[normalized_key]
+                            else:
+                                # Regular registered device, not currently playing
+                                client_map[resource.clientIdentifier] = {
+                                    'name': resource.name or 'Unknown Device',
+                                    'product': resource.product if hasattr(resource, 'product') else 'Unknown',
+                                    'identifier': resource.clientIdentifier,
+                                    'platform': platform,
+                                    'source': 'Registered (may be offline)',
+                                    'is_active_session': False,
+                                    'playing_title': None
+                                }
+                                logger.debug(f"  → Registered: {resource.name} ({resource.product})")
+                    
+                    # Log any unmatched sessions (these won't be exposed to avoid broken identifiers)
+                    # These are sessions playing on devices that couldn't be matched to MyPlex resources
+                    unmatched = {}
+                    for key, data in active_sessions.items():
+                        if key == data.get('exact_key'):  # Only log once per session
+                            unmatched[key] = data
+                    
+                    if unmatched:
+                        logger.warning(f"Found {len(unmatched)} active session(s) that couldn't be matched to MyPlex resources:")
+                        for key, data in unmatched.items():
+                            logger.warning(f"  → Unmatched: {data['name']} ({data['product']}) - playing: {data['playing_title']}")
+                            logger.warning(f"    This device is streaming but couldn't be matched. Check that it's registered in your Plex account.")
             except Exception as e:
                 logger.warning(f"Could not fetch MyPlex resources: {e}")
 
-            # Convert to list and sort by source priority
+            # Convert to list and ensure all clients have is_active_session flag
             client_list = list(client_map.values())
+            
+            # Ensure all clients have the is_active_session flag
+            for client in client_list:
+                if 'is_active_session' not in client:
+                    client['is_active_session'] = False
+                if 'playing_title' not in client:
+                    client['playing_title'] = None
 
-            # Sort: Active first, then Playing, then Registered
-            source_priority = {'Active (GDM)': 1, 'Playing Now': 2, 'Registered (may be offline)': 3}
-            client_list.sort(key=lambda x: (source_priority.get(x['source'], 4), x['name']))
+            # Sort: Currently Playing first (most reliable for reverse proxy users), then Active GDM, then Registered
+            # Within each category, sort alphabetically by name
+            source_priority = {'Currently Playing': 0, 'Active (GDM)': 1, 'Registered (may be offline)': 2}
+            client_list.sort(key=lambda x: (source_priority.get(x['source'], 3), x['name']))
 
             logger.info(f"Total unique clients discovered: {len(client_list)}")
 

@@ -347,6 +347,53 @@ def initialize_app():
         settings_obj = db_session.query(Settings).first()
         plex_api = PlexAPI(db_settings=settings_obj)
         logger.info("Plex API connected")
+        
+        # Auto-populate settings from environment variables if not already set
+        # This ensures Plex OAuth login works when using env vars for configuration
+        if settings_obj:
+            settings_updated = False
+            
+            # Save plex_url and plex_token if they came from environment variables
+            if not settings_obj.plex_url and plex_api.base_url:
+                settings_obj.plex_url = plex_api.base_url
+                settings_updated = True
+                logger.info(f"Auto-saved PLEX_URL from environment: {plex_api.base_url}")
+            
+            if not settings_obj.plex_token and plex_api.token:
+                settings_obj.plex_token = plex_api.token
+                settings_updated = True
+                logger.info("Auto-saved PLEX_TOKEN from environment")
+            
+            # Auto-save machine identifier for Plex OAuth login
+            if not settings_obj.plex_machine_identifier:
+                try:
+                    machine_id = plex_api.plex.machineIdentifier
+                    if machine_id:
+                        settings_obj.plex_machine_identifier = machine_id
+                        settings_updated = True
+                        logger.info(f"Auto-saved Plex machine identifier: {machine_id}")
+                except Exception as e:
+                    logger.warning(f"Could not get Plex machine identifier: {e}")
+            
+            if settings_updated:
+                db_session.commit()
+                logger.info("Settings auto-populated from environment variables")
+        else:
+            # Create Settings row if it doesn't exist and we have a working Plex connection
+            try:
+                machine_id = plex_api.plex.machineIdentifier
+                settings_obj = Settings(
+                    shuffle_frequency='weekly',
+                    plex_url=plex_api.base_url,
+                    plex_token=plex_api.token,
+                    plex_machine_identifier=machine_id
+                )
+                db_session.add(settings_obj)
+                db_session.commit()
+                logger.info(f"Created Settings from environment variables (machine ID: {machine_id})")
+            except Exception as e:
+                logger.warning(f"Could not create Settings from env vars: {e}")
+                
     except Exception as e:
         logger.warning(f"Plex API not available: {e}")
         plex_api = None
@@ -1776,6 +1823,428 @@ def apply_update():
     except Exception as e:
         logger.error(f"Error applying update: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Update failed. Please try again or check the logs.'})
+
+@app.route('/api/ffmpeg/install/stream', methods=['POST'])
+@login_required
+def install_ffmpeg_stream():
+    """Stream FFmpeg installation progress using Server-Sent Events"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+    
+    import platform
+    import subprocess
+    import requests
+    from pathlib import Path
+    import os
+    import queue
+    import threading
+    
+    message_queue = queue.Queue()
+    
+    def send_progress(step, message, progress):
+        message_queue.put({'step': step, 'message': message, 'progress': progress})
+    
+    def perform_install():
+        temp_archive = None
+        extracted_dir = None
+        
+        try:
+            send_progress('Detecting system', 'Checking architecture...', 10)
+            
+            # Create /data/ffmpeg/bin directory
+            ffmpeg_dir = Path('/data/ffmpeg/bin')
+            ffmpeg_dir.mkdir(parents=True, exist_ok=True)
+            ffmpeg_path = ffmpeg_dir / 'ffmpeg'
+            
+            # Detect architecture
+            arch = platform.machine().lower()
+            logger.info(f"Detected architecture: {arch}")
+            
+            # Map architecture to download URL
+            if arch in ['x86_64', 'amd64']:
+                download_url = 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz'
+            elif arch in ['aarch64', 'arm64']:
+                download_url = 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz'
+            elif arch in ['armv7l', 'armhf']:
+                download_url = 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-armhf-static.tar.xz'
+            else:
+                send_progress('Error', f'Unsupported architecture: {arch}', 0)
+                message_queue.put({'done': True, 'result': {'success': False, 'error': f'Unsupported architecture: {arch}'}})
+                return
+            
+            send_progress('Downloading', f'Downloading FFmpeg for {arch}...', 20)
+            logger.info(f"Downloading FFmpeg from {download_url}")
+            
+            # Download to temporary location
+            temp_archive = Path('/tmp/ffmpeg.tar.xz')
+            try:
+                response = requests.get(download_url, stream=True, timeout=300)
+                response.raise_for_status()
+                
+                total_size = int(response.headers.get('content-length', 0))
+                bytes_downloaded = 0
+                
+                with open(temp_archive, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                            bytes_downloaded += len(chunk)
+                            if total_size > 0:
+                                percent = 20 + int((bytes_downloaded / total_size) * 30)
+                                mb_downloaded = bytes_downloaded / (1024 * 1024)
+                                mb_total = total_size / (1024 * 1024)
+                                send_progress('Downloading', f'Downloaded {mb_downloaded:.1f}MB / {mb_total:.1f}MB', percent)
+                
+                if not temp_archive.exists() or temp_archive.stat().st_size == 0:
+                    raise Exception("Downloaded file is empty or missing")
+                    
+                logger.info(f"Downloaded {bytes_downloaded} bytes")
+                
+            except requests.RequestException as e:
+                logger.error(f"Download failed: {e}", exc_info=True)
+                if temp_archive and temp_archive.exists():
+                    temp_archive.unlink()
+                send_progress('Error', f'Download failed: {str(e)}', 0)
+                message_queue.put({'done': True, 'result': {'success': False, 'error': f'Download failed: {str(e)}'}})
+                return
+            
+            send_progress('Extracting', 'Extracting archive...', 60)
+            
+            # Extract the archive
+            try:
+                result = subprocess.run(['tar', '-xf', str(temp_archive), '-C', '/tmp'], 
+                                      check=True, capture_output=True, text=True, timeout=60)
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Extraction failed: {e.stderr}", exc_info=True)
+                if temp_archive:
+                    temp_archive.unlink(missing_ok=True)
+                send_progress('Error', f'Extraction failed', 0)
+                message_queue.put({'done': True, 'result': {'success': False, 'error': f'Archive extraction failed: {e.stderr}'}})
+                return
+            
+            send_progress('Installing', 'Locating binary...', 70)
+            
+            # Find the ffmpeg binary in the extracted folder
+            extracted_dir = None
+            for item in Path('/tmp').glob('ffmpeg-*-static'):
+                if item.is_dir():
+                    extracted_dir = item
+                    break
+            
+            if not extracted_dir or not extracted_dir.exists():
+                if temp_archive:
+                    temp_archive.unlink(missing_ok=True)
+                send_progress('Error', 'Extracted directory not found', 0)
+                message_queue.put({'done': True, 'result': {'success': False, 'error': 'Extracted directory not found'}})
+                return
+            
+            # Verify ffmpeg binary exists
+            source_binary = extracted_dir / 'ffmpeg'
+            if not source_binary.exists() or not source_binary.is_file():
+                logger.error(f"FFmpeg binary not found in {extracted_dir}")
+                if temp_archive:
+                    temp_archive.unlink(missing_ok=True)
+                if extracted_dir:
+                    subprocess.run(['rm', '-rf', str(extracted_dir)], check=False)
+                send_progress('Error', 'FFmpeg binary not found in archive', 0)
+                message_queue.put({'done': True, 'result': {'success': False, 'error': 'FFmpeg binary not found in downloaded archive'}})
+                return
+            
+            send_progress('Installing', 'Copying to /data/ffmpeg/bin...', 80)
+            
+            # Copy ffmpeg binary to target location
+            try:
+                subprocess.run(['cp', str(source_binary), str(ffmpeg_path)], 
+                             check=True, capture_output=True, text=True)
+                subprocess.run(['chmod', '+x', str(ffmpeg_path)], 
+                             check=True, capture_output=True, text=True)
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Failed to copy/chmod FFmpeg: {e.stderr}", exc_info=True)
+                send_progress('Error', 'Failed to install binary', 0)
+                message_queue.put({'done': True, 'result': {'success': False, 'error': f'Failed to install binary: {e.stderr}'}})
+                return
+            
+            send_progress('Verifying', 'Testing FFmpeg installation...', 90)
+            
+            # Verify installation works
+            if not ffmpeg_path.exists() or not os.access(ffmpeg_path, os.X_OK):
+                send_progress('Error', 'Binary not executable', 0)
+                message_queue.put({'done': True, 'result': {'success': False, 'error': 'FFmpeg binary not executable after installation'}})
+                return
+            
+            try:
+                result = subprocess.run([str(ffmpeg_path), '-version'], 
+                                      capture_output=True, text=True, timeout=5, check=True)
+                version_info = result.stdout.split('\n')[0] if result.stdout else 'Unknown'
+                logger.info(f"FFmpeg installed successfully: {version_info}")
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                logger.error(f"FFmpeg verification failed: {e}", exc_info=True)
+                if ffmpeg_path.exists():
+                    ffmpeg_path.unlink()
+                send_progress('Error', 'Verification failed', 0)
+                message_queue.put({'done': True, 'result': {'success': False, 'error': 'FFmpeg verification failed - binary is not functional'}})
+                return
+            
+            # Update PATH in current process so FFmpeg is immediately available
+            current_path = os.environ.get('PATH', '')
+            if '/data/ffmpeg/bin' not in current_path:
+                os.environ['PATH'] = f"/data/ffmpeg/bin:{current_path}"
+                logger.info("Updated PATH in current process to include /data/ffmpeg/bin")
+            
+            send_progress('Complete', f'FFmpeg installed: {version_info}', 100)
+            logger.info(f"FFmpeg installed successfully to {ffmpeg_path}")
+            message_queue.put({'done': True, 'result': {'success': True, 'message': 'FFmpeg installed successfully', 'path': str(ffmpeg_path), 'version': version_info}})
+            
+        except Exception as e:
+            logger.error(f"FFmpeg installation error: {e}", exc_info=True)
+            send_progress('Error', str(e), 0)
+            message_queue.put({'done': True, 'result': {'success': False, 'error': f'Installation failed: {str(e)}'}})
+        finally:
+            # Clean up temporary files
+            if temp_archive and temp_archive.exists():
+                try:
+                    temp_archive.unlink()
+                except Exception as e:
+                    logger.warning(f"Failed to clean up temp archive: {e}")
+            if extracted_dir and extracted_dir.exists():
+                try:
+                    subprocess.run(['rm', '-rf', str(extracted_dir)], check=False, timeout=10)
+                except Exception as e:
+                    logger.warning(f"Failed to clean up extracted dir: {e}")
+    
+    # Start installation in background thread
+    install_thread = threading.Thread(target=perform_install)
+    install_thread.daemon = True
+    install_thread.start()
+    
+    def generate():
+        while True:
+            try:
+                msg = message_queue.get(timeout=30)
+                
+                if 'done' in msg:
+                    yield f"data: {json.dumps(msg)}\n\n"
+                    break
+                elif 'error' in msg:
+                    yield f"data: {json.dumps(msg)}\n\n"
+                    break
+                else:
+                    yield f"data: {json.dumps(msg)}\n\n"
+            except queue.Empty:
+                yield f"data: {json.dumps({'heartbeat': True})}\n\n"
+    
+    return app.response_class(
+        generate(),
+        mimetype='text/event-stream',
+        headers={
+            'Cache-Control': 'no-cache',
+            'X-Accel-Buffering': 'no'
+        }
+    )
+
+@app.route('/api/ffmpeg/install', methods=['POST'])
+@login_required
+def install_ffmpeg():
+    """Legacy endpoint - redirects to streaming version"""
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+    
+    import platform
+    import subprocess
+    import requests
+    from pathlib import Path
+    import os
+    
+    temp_archive = None
+    extracted_dir = None
+    
+    try:
+        # Create /data/ffmpeg/bin directory
+        ffmpeg_dir = Path('/data/ffmpeg/bin')
+        ffmpeg_dir.mkdir(parents=True, exist_ok=True)
+        ffmpeg_path = ffmpeg_dir / 'ffmpeg'
+        
+        # Detect architecture
+        arch = platform.machine().lower()
+        logger.info(f"Detected architecture: {arch}")
+        
+        # Map architecture to download URL
+        # Using johnvansickle's static builds (widely trusted in the community)
+        if arch in ['x86_64', 'amd64']:
+            download_url = 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz'
+        elif arch in ['aarch64', 'arm64']:
+            download_url = 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-arm64-static.tar.xz'
+        elif arch in ['armv7l', 'armhf']:
+            download_url = 'https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-armhf-static.tar.xz'
+        else:
+            return jsonify({'success': False, 'error': f'Unsupported architecture: {arch}'}), 400
+        
+        logger.info(f"Downloading FFmpeg from {download_url}")
+        
+        # Download to temporary location
+        temp_archive = Path('/tmp/ffmpeg.tar.xz')
+        try:
+            response = requests.get(download_url, stream=True, timeout=300)
+            response.raise_for_status()
+            
+            bytes_downloaded = 0
+            with open(temp_archive, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        bytes_downloaded += len(chunk)
+            
+            # Verify file was actually downloaded
+            if not temp_archive.exists() or temp_archive.stat().st_size == 0:
+                raise Exception("Downloaded file is empty or missing")
+                
+            logger.info(f"Downloaded {bytes_downloaded} bytes")
+            
+        except requests.RequestException as e:
+            logger.error(f"Download failed: {e}", exc_info=True)
+            if temp_archive and temp_archive.exists():
+                temp_archive.unlink()
+            return jsonify({'success': False, 'error': f'Download failed: {str(e)}'}), 500
+        
+        logger.info("Download complete, extracting...")
+        
+        # Extract the archive
+        try:
+            result = subprocess.run(['tar', '-xf', str(temp_archive), '-C', '/tmp'], 
+                                  check=True, capture_output=True, text=True, timeout=60)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Extraction failed: {e.stderr}", exc_info=True)
+            if temp_archive:
+                temp_archive.unlink(missing_ok=True)
+            return jsonify({'success': False, 'error': f'Archive extraction failed: {e.stderr}'}), 500
+        
+        # Find the ffmpeg binary in the extracted folder
+        extracted_dir = None
+        for item in Path('/tmp').glob('ffmpeg-*-static'):
+            if item.is_dir():
+                extracted_dir = item
+                break
+        
+        if not extracted_dir or not extracted_dir.exists():
+            if temp_archive:
+                temp_archive.unlink(missing_ok=True)
+            return jsonify({'success': False, 'error': 'Extracted directory not found'}), 500
+        
+        # Verify ffmpeg binary exists and is executable
+        source_binary = extracted_dir / 'ffmpeg'
+        if not source_binary.exists():
+            logger.error(f"FFmpeg binary not found in {extracted_dir}")
+            if temp_archive:
+                temp_archive.unlink(missing_ok=True)
+            if extracted_dir:
+                subprocess.run(['rm', '-rf', str(extracted_dir)], check=False)
+            return jsonify({'success': False, 'error': 'FFmpeg binary not found in downloaded archive'}), 500
+        
+        if not source_binary.is_file():
+            logger.error(f"FFmpeg path is not a file: {source_binary}")
+            if temp_archive:
+                temp_archive.unlink(missing_ok=True)
+            if extracted_dir:
+                subprocess.run(['rm', '-rf', str(extracted_dir)], check=False)
+            return jsonify({'success': False, 'error': 'FFmpeg binary is not a valid file'}), 500
+        
+        # Copy ffmpeg binary to target location
+        try:
+            subprocess.run(['cp', str(source_binary), str(ffmpeg_path)], 
+                         check=True, capture_output=True, text=True)
+            subprocess.run(['chmod', '+x', str(ffmpeg_path)], 
+                         check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to copy/chmod FFmpeg: {e.stderr}", exc_info=True)
+            return jsonify({'success': False, 'error': f'Failed to install binary: {e.stderr}'}), 500
+        
+        # Verify installation works
+        if not ffmpeg_path.exists() or not os.access(ffmpeg_path, os.X_OK):
+            return jsonify({'success': False, 'error': 'FFmpeg binary not executable after installation'}), 500
+        
+        try:
+            result = subprocess.run([str(ffmpeg_path), '-version'], 
+                                  capture_output=True, text=True, timeout=5, check=True)
+            version_info = result.stdout.split('\n')[0] if result.stdout else 'Unknown'
+            logger.info(f"FFmpeg installed successfully: {version_info}")
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            logger.error(f"FFmpeg verification failed: {e}", exc_info=True)
+            # Clean up failed installation
+            if ffmpeg_path.exists():
+                ffmpeg_path.unlink()
+            return jsonify({'success': False, 'error': 'FFmpeg verification failed - binary is not functional'}), 500
+        
+        logger.info(f"FFmpeg installed successfully to {ffmpeg_path}")
+        return jsonify({
+            'success': True,
+            'message': 'FFmpeg installed successfully',
+            'path': str(ffmpeg_path),
+            'version': version_info
+        })
+        
+    except Exception as e:
+        logger.error(f"FFmpeg installation error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': f'Installation failed: {str(e)}'}), 500
+    finally:
+        # Clean up temporary files
+        if temp_archive and temp_archive.exists():
+            try:
+                temp_archive.unlink()
+            except Exception as e:
+                logger.warning(f"Failed to clean up temp archive: {e}")
+        if extracted_dir and extracted_dir.exists():
+            try:
+                subprocess.run(['rm', '-rf', str(extracted_dir)], check=False, timeout=10)
+            except Exception as e:
+                logger.warning(f"Failed to clean up extracted dir: {e}")
+
+@app.route('/api/ffmpeg/remove', methods=['POST'])
+@login_required
+def remove_ffmpeg():
+    if not current_user.is_admin:
+        return jsonify({'success': False, 'error': 'Admin access required'}), 403
+    
+    import shutil
+    from pathlib import Path
+    import os
+    
+    try:
+        ffmpeg_dir = Path('/data/ffmpeg')
+        
+        # Security: Verify this is the exact path we expect and not a symlink
+        if not ffmpeg_dir.exists():
+            return jsonify({'success': False, 'error': 'FFmpeg directory not found'}), 404
+        
+        # Resolve to absolute path and verify it's exactly /data/ffmpeg
+        resolved_path = ffmpeg_dir.resolve()
+        expected_path = Path('/data/ffmpeg').resolve()
+        
+        if resolved_path != expected_path:
+            logger.error(f"Path mismatch during removal: {resolved_path} != {expected_path}")
+            return jsonify({'success': False, 'error': 'Invalid path detected'}), 400
+        
+        # Additional safety: Check if it's a symlink (shouldn't be)
+        if ffmpeg_dir.is_symlink():
+            logger.error(f"Refusing to remove symlink: {ffmpeg_dir}")
+            return jsonify({'success': False, 'error': 'Cannot remove symlinks'}), 400
+        
+        # Verify it's actually a directory
+        if not ffmpeg_dir.is_dir():
+            logger.error(f"Path is not a directory: {ffmpeg_dir}")
+            return jsonify({'success': False, 'error': 'Path is not a directory'}), 400
+        
+        # Safe to remove
+        try:
+            shutil.rmtree(str(ffmpeg_dir))
+            logger.info(f"FFmpeg directory removed successfully: {ffmpeg_dir}")
+            return jsonify({'success': True, 'message': 'FFmpeg removed successfully'})
+        except OSError as e:
+            logger.error(f"Failed to remove directory: {e}", exc_info=True)
+            return jsonify({'success': False, 'error': f'Failed to remove directory: {str(e)}'}), 500
+            
+    except Exception as e:
+        logger.error(f"FFmpeg removal error: {e}", exc_info=True)
+        return jsonify({'success': False, 'error': f'Removal failed: {str(e)}'}), 500
 
 @app.route('/api/themes/upload', methods=['POST'])
 @login_required

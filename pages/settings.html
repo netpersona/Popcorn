@@ -682,47 +682,41 @@
                         
                         <!-- FFmpeg Status -->
                         <div style="background: {% if ffmpeg_available %}#1e3a2e{% else %}#3a2e1e{% endif %}; padding: 12px; border-radius: 6px; margin-bottom: 15px; border-left: 3px solid {% if ffmpeg_available %}#27ae60{% else %}#e67e22{% endif %};">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-{% if ffmpeg_available %}check-circle{% else %}exclamation-triangle{% endif %}" style="color: {% if ffmpeg_available %}#27ae60{% else %}#e67e22{% endif %}; font-size: 1.2rem;"></i>
+                            <div style="display: flex; align-items: center; gap: 10px; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                                    <i class="fas fa-{% if ffmpeg_available %}check-circle{% else %}exclamation-triangle{% endif %}" style="color: {% if ffmpeg_available %}#27ae60{% else %}#e67e22{% endif %}; font-size: 1.2rem;"></i>
+                                    <div>
+                                        <strong style="font-size: 0.95rem;">FFmpeg Status: {% if ffmpeg_available %}Installed{% else %}Not Installed{% endif %}</strong>
+                                        <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.85rem;">
+                                            {{ ffmpeg_message }}
+                                            {% if not ffmpeg_available %}
+                                            <br><strong style="color: #e67e22;">Live TV streaming requires FFmpeg.</strong>
+                                            Click Install to download automatically (~100MB).
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
                                 <div>
-                                    <strong style="font-size: 0.95rem;">FFmpeg Status: {% if ffmpeg_available %}Installed{% else %}Not Installed{% endif %}</strong>
-                                    <p style="margin: 5px 0 0 0; color: var(--text-secondary); font-size: 0.85rem;">
-                                        {{ ffmpeg_message }}
-                                        {% if not ffmpeg_available %}
-                                        <br><strong style="color: #e67e22;">Live TV streaming requires FFmpeg.</strong>
-                                        See installation options below.
-                                        {% endif %}
-                                    </p>
+                                    {% if ffmpeg_available %}
+                                    <button type="button" id="removeFFmpegBtn" class="btn btn-danger" style="padding: 8px 16px; font-size: 0.85rem;">
+                                        <i class="fas fa-trash"></i> Remove FFmpeg
+                                    </button>
+                                    {% else %}
+                                    <button type="button" id="installFFmpegBtn" class="btn btn-success" style="padding: 8px 16px; font-size: 0.85rem;">
+                                        <i class="fas fa-download"></i> Install FFmpeg
+                                    </button>
+                                    {% endif %}
                                 </div>
                             </div>
-                            {% if not ffmpeg_available %}
-                            <details style="margin-top: 10px; cursor: pointer;">
-                                <summary style="color: var(--accent); font-weight: 500; font-size: 0.9rem;">
-                                    <i class="fas fa-book"></i> Installation Options
-                                </summary>
-                                <div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 4px;">
-                                    <p style="margin: 0 0 8px 0; font-weight: 500;">Option 1: Auto-install in Docker</p>
-                                    <code style="display: block; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.8rem;">
-                                        # Add to docker-compose.yml:<br>
-                                        environment:<br>
-                                        &nbsp;&nbsp;- INSTALL_FFMPEG=true
-                                    </code>
-                                    
-                                    <p style="margin: 15px 0 8px 0; font-weight: 500;">Option 2: Map from Unraid/Host</p>
-                                    <code style="display: block; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.8rem;">
-                                        # Add to docker-compose.yml:<br>
-                                        volumes:<br>
-                                        &nbsp;&nbsp;- /usr/bin/ffmpeg:/usr/bin/ffmpeg:ro
-                                    </code>
-                                    
-                                    <p style="margin: 15px 0 8px 0; font-weight: 500;">Option 3: Manual Installation</p>
-                                    <code style="display: block; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; font-size: 0.8rem;">
-                                        # Ubuntu/Debian:<br>
-                                        sudo apt-get install ffmpeg
-                                    </code>
+                            <div id="ffmpegInstallProgress" style="display: none; margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-spinner fa-spin" style="color: var(--accent);"></i>
+                                    <span id="ffmpegInstallStatus">Downloading FFmpeg...</span>
                                 </div>
-                            </details>
-                            {% endif %}
+                                <div style="margin-top: 8px; background: rgba(0,0,0,0.3); height: 20px; border-radius: 10px; overflow: hidden;">
+                                    <div id="ffmpegInstallBar" style="background: linear-gradient(90deg, #27ae60, #2ecc71); height: 100%; width: 0%; transition: width 0.3s;"></div>
+                                </div>
+                            </div>
                         </div>
                         
                         <form method="POST" id="liveTvConfigForm">
@@ -1290,6 +1284,121 @@
         function closeUpdateModal() {
             document.getElementById('updateModal').style.display = 'none';
         }
+
+        // FFmpeg installation handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const installBtn = document.getElementById('installFFmpegBtn');
+            const removeBtn = document.getElementById('removeFFmpegBtn');
+            const progressDiv = document.getElementById('ffmpegInstallProgress');
+            const statusSpan = document.getElementById('ffmpegInstallStatus');
+            const progressBar = document.getElementById('ffmpegInstallBar');
+
+            if (installBtn) {
+                installBtn.addEventListener('click', function() {
+                    if (!confirm('Download and install FFmpeg (~100MB)? This will take 2-3 minutes and persists across container restarts.')) {
+                        return;
+                    }
+
+                    installBtn.disabled = true;
+                    progressDiv.style.display = 'block';
+                    statusSpan.textContent = 'Initializing...';
+                    statusSpan.style.color = '';
+                    progressBar.style.width = '0%';
+
+                    // Use Server-Sent Events for real-time progress
+                    const eventSource = new EventSource('/api/ffmpeg/install/stream');
+
+                    eventSource.onmessage = function(event) {
+                        const data = JSON.parse(event.data);
+
+                        if (data.heartbeat) {
+                            return;
+                        }
+
+                        if (data.step && data.message) {
+                            statusSpan.textContent = data.step + ': ' + data.message;
+                            progressBar.style.width = data.progress + '%';
+                        }
+
+                        if (data.done) {
+                            eventSource.close();
+
+                            if (data.result.success) {
+                                statusSpan.textContent = 'Installation complete! FFmpeg is ready to use.';
+                                statusSpan.style.color = '#27ae60';
+                                progressBar.style.width = '100%';
+                                
+                                // Show success message and reload
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 2000);
+                            } else {
+                                statusSpan.textContent = 'Installation failed: ' + (data.result.error || 'Unknown error');
+                                statusSpan.style.color = '#e74c3c';
+                                installBtn.disabled = false;
+                                progressBar.style.width = '0%';
+                            }
+                        }
+
+                        if (data.error) {
+                            eventSource.close();
+                            statusSpan.textContent = 'Error: ' + data.error;
+                            statusSpan.style.color = '#e74c3c';
+                            installBtn.disabled = false;
+                            progressBar.style.width = '0%';
+                        }
+                    };
+
+                    eventSource.onerror = function() {
+                        eventSource.close();
+                        statusSpan.textContent = 'Connection error during installation';
+                        statusSpan.style.color = '#e74c3c';
+                        installBtn.disabled = false;
+                        progressBar.style.width = '0%';
+                    };
+                });
+            }
+
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    if (!confirm('Remove FFmpeg installation? This will disable Live TV streaming until you reinstall.')) {
+                        return;
+                    }
+
+                    removeBtn.disabled = true;
+                    progressDiv.style.display = 'block';
+                    statusSpan.textContent = 'Removing FFmpeg...';
+                    progressBar.style.width = '50%';
+
+                    fetch('/api/ffmpeg/remove', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token() }}'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            statusSpan.textContent = 'FFmpeg removed successfully! Reloading...';
+                            progressBar.style.width = '100%';
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            statusSpan.textContent = 'Removal failed: ' + (data.error || 'Unknown error');
+                            statusSpan.style.color = '#e74c3c';
+                            removeBtn.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        statusSpan.textContent = 'Network error: ' + error.message;
+                        statusSpan.style.color = '#e74c3c';
+                        removeBtn.disabled = false;
+                    });
+                });
+            }
+        });
 
         // Check for updates on page load
         window.addEventListener('load', function() {

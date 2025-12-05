@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  popcorn:
+    image: netpersona/popcorn:latest
+    container_name: Popcorn
+    ports:
+      - "5000:5000"
+    volumes:
+      # Data persistence: Your database and configs are stored here
+      # Change the path before the colon to match your system
+      - ./popcorn-data:/data
+      
+      # OPTION 2: Map FFmpeg from host system (alternative to auto-install)
+      # Uncomment to use your system's FFmpeg instead of auto-installing:
+      # - /usr/bin/ffmpeg:/usr/bin/ffmpeg:ro
+    environment:
+      # REQUIRED: Generate a random secret with: openssl rand -hex 32
+      - SESSION_SECRET=change-this-to-a-random-secret-key
+      
+      # OPTIONAL: Configure Plex settings here or via web UI
+      # Uncomment and fill in your Plex server details:
+      # - PLEX_URL=http://192.168.1.100:32400
+      # - PLEX_TOKEN=your-plex-token-here
+      
+      # NOTE: Live TV features require:
+      # 1. Plex Pass subscription
+      # 2. FFmpeg (install via Settings page "Install FFmpeg" button)
+      # 3. Enable Live TV in Popcorn settings after startup
+      # 4. Add Popcorn as a Live TV source in Plex (auto-detected via network scan)
+    restart: unless-stopped
+
+# LIVE TV SETUP INSTRUCTIONS:
+# 1. Start container: docker-compose -f docker-compose.livetv.yml up -d
+# 2. Open Popcorn web UI: http://your-server-ip:5000
+# 3. Go to Settings → Live TV Integration
+# 4. Click "Install FFmpeg" button (if not already installed)
+# 5. Enable "Live TV & DVR Integration"
+# 6. In Plex: Settings → Live TV & DVR → Setup → Scan for network tuners
+# 7. Plex will detect "Popcorn TV" - select it and complete setup
+#
+# FFMPEG INSTALLATION OPTIONS:
+# - Option 1 (Recommended): Use the "Install FFmpeg" button in Settings → Live TV
+#   - Downloads static binary to /data/ffmpeg/bin
+#   - Persists across container restarts and updates
+#   - ~100MB download, one-click installation
+# - Option 2: Map from host (uncomment volume mapping above)
+#   - Use FFmpeg already installed on your host system
+#   - Add: - /usr/bin/ffmpeg:/usr/bin/ffmpeg:ro
+#
+# To update: docker-compose -f docker-compose.livetv.yml pull && docker-compose -f docker-compose.livetv.yml up -d

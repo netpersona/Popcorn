@@ -356,55 +356,92 @@ class ScheduleGenerator:
         logger.info(f"Generated schedule for channel: {channel_name} (day {day})")
     
     def generate_all_schedules(self, force=False):
-        settings = self.session.query(Settings).first()
-        is_first_run = False
-        
-        if not settings:
-            settings = Settings(shuffle_frequency='weekly', last_shuffle_date=None)
-            self.session.add(settings)
+        try:
+            settings = self.session.query(Settings).first()
+            is_first_run = False
+            
+            if not settings:
+                settings = Settings(shuffle_frequency='weekly', last_shuffle_date=None)
+                self.session.add(settings)
+                self.session.commit()
+                is_first_run = True
+            
+            if not force and not is_first_run and settings.last_shuffle_date:
+                days_since_shuffle = (date.today() - settings.last_shuffle_date).days
+                
+                if settings.shuffle_frequency == 'daily' and days_since_shuffle < 1:
+                    logger.info("Schedules already generated today")
+                    return
+                elif settings.shuffle_frequency == 'weekly' and days_since_shuffle < 7:
+                    logger.info("Schedules generated within the past week")
+                    return
+                elif settings.shuffle_frequency == 'monthly' and days_since_shuffle < 30:
+                    logger.info("Schedules generated within the past month")
+                    return
+            
+            logger.info("Generating fresh schedules for all channels and all 7 days")
+            
+            self.session.query(Schedule).delete()
             self.session.commit()
-            is_first_run = True
-        
-        if not force and not is_first_run and settings.last_shuffle_date:
-            days_since_shuffle = (date.today() - settings.last_shuffle_date).days
             
-            if settings.shuffle_frequency == 'daily' and days_since_shuffle < 1:
-                logger.info("Schedules already generated today")
-                return
-            elif settings.shuffle_frequency == 'weekly' and days_since_shuffle < 7:
-                logger.info("Schedules generated within the past week")
-                return
-            elif settings.shuffle_frequency == 'monthly' and days_since_shuffle < 30:
-                logger.info("Schedules generated within the past month")
-                return
-        
-        logger.info("Generating fresh schedules for all channels and all 7 days")
-        
-        self.session.query(Schedule).delete()
-        
-        genre_movies = {}
-        movies = self.session.query(Movie).all()
-        
-        for movie in movies:
-            if movie.genre not in genre_movies:
-                genre_movies[movie.genre] = []
-            genre_movies[movie.genre].append(movie)
-        
-        # Generate schedules for all 7 days of the week (0=Monday, 6=Sunday)
-        for day in range(7):
-            for genre, genre_movie_list in genre_movies.items():
-                self.generate_channel_schedule(genre, genre_movie_list, day=day)
+            genre_movies = {}
+            movies = self.session.query(Movie).all()
             
-            active_holidays = self.get_active_holiday_channels()
-            for holiday_channel in active_holidays:
-                holiday_movies = self.get_movies_for_holiday_channel(holiday_channel)
-                if holiday_movies:
-                    self.generate_channel_schedule(holiday_channel.name, holiday_movies, day=day)
-        
-        settings.last_shuffle_date = date.today()
-        self.session.commit()
-        
-        logger.info("All schedules generated successfully for 7 days")
+            for movie in movies:
+                if movie.genre not in genre_movies:
+                    genre_movies[movie.genre] = []
+                genre_movies[movie.genre].append(movie)
+            
+            channels_generated = 0
+            errors_encountered = 0
+            
+            for day in range(7):
+                try:
+                    for genre, genre_movie_list in genre_movies.items():
+                        try:
+                            self.generate_channel_schedule(genre, genre_movie_list, day=day)
+                            channels_generated += 1
+                        except Exception as e:
+                            logger.error(f"Failed to generate schedule for {genre} on day {day}: {e}", exc_info=True)
+                            errors_encountered += 1
+                            continue
+                    
+                    try:
+                        active_holidays = self.get_active_holiday_channels()
+                        for holiday_channel in active_holidays:
+                            try:
+                                holiday_movies = self.get_movies_for_holiday_channel(holiday_channel)
+                                if holiday_movies:
+                                    self.generate_channel_schedule(holiday_channel.name, holiday_movies, day=day)
+                                    channels_generated += 1
+                            except Exception as e:
+                                logger.error(f"Failed to generate holiday schedule for {holiday_channel.name} on day {day}: {e}", exc_info=True)
+                                errors_encountered += 1
+                                continue
+                    except Exception as e:
+                        logger.error(f"Failed to process holiday channels for day {day}: {e}", exc_info=True)
+                        errors_encountered += 1
+                
+                except Exception as e:
+                    logger.error(f"Failed to generate schedules for day {day}: {e}", exc_info=True)
+                    errors_encountered += 1
+                    continue
+            
+            settings.last_shuffle_date = date.today()
+            self.session.commit()
+            
+            if errors_encountered > 0:
+                logger.warning(f"Schedule generation completed with {errors_encountered} errors. Generated {channels_generated} channel schedules across 7 days.")
+            else:
+                logger.info(f"All schedules generated successfully: {channels_generated} channel schedules across 7 days")
+                
+        except Exception as e:
+            logger.error(f"Critical error during schedule generation: {e}", exc_info=True)
+            try:
+                self.session.rollback()
+            except Exception:
+                pass
+            raise
     
     def get_current_playing(self, channel):
         now = datetime.now()

@@ -9,19 +9,29 @@ logger = logging.getLogger(__name__)
 
 def check_ffmpeg_available():
     """
-    Check if FFmpeg is available on the system.
+    Check if FFmpeg is available on the system or in /data/ffmpeg/bin.
     
     Returns:
         tuple: (is_available: bool, message: str)
     """
+    import os
+    from pathlib import Path
+    
+    # First check system PATH (includes /data/ffmpeg/bin if entrypoint.sh added it)
     ffmpeg_path = shutil.which('ffmpeg')
     
     if ffmpeg_path:
         logger.info(f"FFmpeg found at: {ffmpeg_path}")
         return True, f"FFmpeg detected at {ffmpeg_path}"
-    else:
-        logger.warning("FFmpeg not found on system")
-        return False, "FFmpeg not installed"
+    
+    # Fallback: Check /data/ffmpeg/bin directly (in case PATH not updated yet)
+    data_ffmpeg = Path('/data/ffmpeg/bin/ffmpeg')
+    if data_ffmpeg.exists() and os.access(data_ffmpeg, os.X_OK):
+        logger.info(f"FFmpeg found at: {data_ffmpeg}")
+        return True, f"FFmpeg detected at {data_ffmpeg}"
+    
+    logger.warning("FFmpeg not found on system or in /data/ffmpeg/bin")
+    return False, "FFmpeg not installed"
 
 
 def get_ffmpeg_install_instructions():
