@@ -11,7 +11,7 @@ MarkupSafe==3.0.3
 PlexAPI==4.17.2
 python-dotenv==1.2.1
 requests==2.32.5
-SQLAlchemy==2.0.44
+SQLAlchemy==2.0.45
 typing_extensions==4.15.0
 urllib3==2.6.0
 Werkzeug==3.1.4
